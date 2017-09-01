@@ -1491,8 +1491,8 @@ data Account = Account {
      , accountDisplayName          :: Maybe Text
      , accountTimeZone             :: Text
      , accountDetailsSubmitted     :: Bool
-     , accountChargeEnabled        :: Bool
-     , accountTransferEnabled      :: Bool
+     , accountChargesEnabled       :: Bool
+     , accountTransfersEnabled     :: Bool
      , accountCurrenciesSupported  :: [Currency]
      , accountDefaultCurrency      :: Currency
      , accountCountry              :: Text
@@ -1513,8 +1513,8 @@ instance FromJSON Account where
                <*> o .:  "display_name"
                <*> o .:  "timezone"
                <*> o .:  "details_submitted"
-               <*> o .:  "charge_enabled"
-               <*> o .:  "transfer_enabled"
+               <*> o .:  "charges_enabled"
+               <*> o .:  "transfers_enabled"
                <*> o .:  "currencies_supported"
                <*> o .:  "default_currency"
                <*> o .:  "country"
