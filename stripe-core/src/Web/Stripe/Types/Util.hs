@@ -10,8 +10,6 @@ module Web.Stripe.Types.Util
          getTransactionId
        , getCustomerId
        , getCardId
-       , getRecipientCardId
-       , getRecipientId
        , getAccountId
        , getChargeId
        , getInvoiceId
@@ -35,16 +33,6 @@ getCustomerId (CustomerId x) = x
 -- | Helper for retrieving `CardId`
 getCardId :: CardId -> Text
 getCardId (CardId x) = x
-
-------------------------------------------------------------------------------
--- | Helper for retrieving `RecipientCardId`
-getRecipientCardId :: RecipientCardId -> Text
-getRecipientCardId (RecipientCardId x)  = x
-
-------------------------------------------------------------------------------
--- | Helper for retrieiving `RecipientId`
-getRecipientId :: RecipientId -> Text
-getRecipientId (RecipientId x) = x
 
 ------------------------------------------------------------------------------
 -- | Helper for retrieving `AccountId`

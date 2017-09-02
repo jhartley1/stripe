@@ -48,7 +48,6 @@ library
                        Web.Stripe.Invoice
                        Web.Stripe.InvoiceItem
                        Web.Stripe.Plan
-                       Web.Stripe.Recipient
                        Web.Stripe.Refund
                        Web.Stripe.StripeRequest
                        Web.Stripe.Subscription

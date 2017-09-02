@@ -55,8 +55,6 @@ type instance ExpandsTo ChargeId        = Charge
 type instance ExpandsTo CustomerId      = Customer
 type instance ExpandsTo InvoiceId       = Invoice
 type instance ExpandsTo InvoiceItemId   = InvoiceItem
-type instance ExpandsTo RecipientId     = Recipient
-type instance ExpandsTo RecipientCardId = RecipientCard
 type instance ExpandsTo TransactionId   = BalanceTransaction
 
 ------------------------------------------------------------------------------
@@ -300,20 +298,9 @@ newtype CardId = CardId Text
   deriving (Eq, Ord, Read, Show, Data, Typeable)
 
 ------------------------------------------------------------------------------
--- | CardId for a `Recipient`
-newtype RecipientCardId = RecipientCardId Text
-  deriving (Eq, Ord, Read, Show, Data, Typeable)
-
-------------------------------------------------------------------------------
 -- | JSON Instance for `CardId`
 instance FromJSON CardId where
    parseJSON (String x)   = pure $ CardId x
-   parseJSON _ = mzero
-
-------------------------------------------------------------------------------
--- | JSON Instance for `RecipientCardId`
-instance FromJSON RecipientCardId where
-   parseJSON (String x)   = pure $ RecipientCardId x
    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
@@ -355,11 +342,6 @@ newtype AddressState   = AddressState Text deriving (Read, Show, Eq, Ord, Data, 
 ------------------------------------------------------------------------------
 -- | Address Zip Code for a `Card`
 newtype AddressZip     = AddressZip Text deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | `IsVerified` `Recipients`
-newtype IsVerified = IsVerified { getVerified :: Bool }
-  deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | Credit / Debit Card Brand
@@ -410,30 +392,6 @@ data Card = Card {
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
--- | `RecipientCard` object
-data RecipientCard = RecipientCard {
-      recipientCardId                :: RecipientCardId
-    , recipientCardLastFour          :: Text
-    , recipientCardBrand             :: Brand
-    , recipientCardFunding           :: Text
-    , recipientCardExpMonth          :: ExpMonth
-    , recipientCardExpYear           :: ExpYear
-    , recipientCardFingerprint       :: Text
-    , recipientCardCountry           :: Country
-    , recipientCardName              :: Maybe Name
-    , recipientCardAddressLine1      :: Maybe AddressLine1
-    , recipientCardAddressLine2      :: Maybe AddressLine2
-    , recipientCardAddressCity       :: Maybe AddressCity
-    , recipientCardAddressState      :: Maybe AddressState
-    , recipientCardAddressZip        :: Maybe AddressZip
-    , recipientCardAddressCountry    :: Maybe AddressCountry
-    , recipientCardCVCCheck          :: Maybe Text
-    , recipientCardAddressLine1Check :: Maybe Text
-    , recipientCardAddressZipCheck   :: Maybe Text
-    , recipientCardRecipientId       :: Maybe (Expandable RecipientId)
-} deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
 -- | JSON Instance for `Card`
 instance FromJSON Card where
     parseJSON (Object o) =
@@ -459,33 +417,6 @@ instance FromJSON Card where
              <*> o .:? "customer"
              <*> o .: "metadata"
     parseJSON _ = mzero
-
-------------------------------------------------------------------------------
--- | JSON Instance for `RecipientCard`
-instance FromJSON RecipientCard where
-    parseJSON (Object o) =
-       RecipientCard
-             <$> (RecipientCardId <$> o .: "id")
-             <*> o .: "last4"
-             <*> o .: "brand"
-             <*> o .: "funding"
-             <*> (ExpMonth <$> o .: "exp_month")
-             <*> (ExpYear <$> o .: "exp_year")
-             <*> o .: "fingerprint"
-             <*> (Country <$> o .: "country")
-             <*> o .:? "name"
-             <*> (fmap AddressLine1 <$> o .:? "address_line1")
-             <*> (fmap AddressLine2 <$> o .:? "address_line2")
-             <*> (fmap AddressCity <$> o .:? "address_city")
-             <*> (fmap AddressState <$> o .:? "address_state")
-             <*> (fmap AddressZip <$> o .:? "address_zip")
-             <*> (fmap AddressCountry <$> o .:? "address_country")
-             <*> o .:? "cvc_check"
-             <*> o .:? "address_line1_check"
-             <*> o .:? "address_zip_check"
-             <*> o .:? "recipient"
-    parseJSON _ = mzero
-
 
 ------------------------------------------------------------------------------
 -- | `NewCard` contains the data needed to create a new `Card`
@@ -1297,7 +1228,6 @@ data Transfer = Transfer {
      , transferFailureMessage       :: Maybe Text
      , transferFailureCode          :: Maybe Text
      , transferStatementDescriptor  :: Maybe StatementDescriptor
-     , transferRecipient            :: Maybe (Expandable RecipientId)
      , transferMetaData             :: MetaData
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
@@ -1320,21 +1250,27 @@ instance FromJSON Transfer where
                     <*> o .:? "failure_message"
                     <*> o .:? "failure_code"
                     <*> o .:? "statement_descriptor"
-                    <*> o .:? "recipient"
                     <*> o .: "metadata"
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `BankAccount` Object
 data BankAccount = BankAccount {
-      bankAccountId          :: BankAccountId
-    , bankAccountObject      :: Text
-    , bankAccountLast4       :: Text
-    , bankAccountCountry     :: Country
-    , bankAccountCurrency    :: Currency
-    , bankAccountStatus      :: Maybe BankAccountStatus
-    , bankAccountFingerprint :: Maybe Text
-    , bankAccountName        :: Text
+      bankAccountId                 :: BankAccountId
+    , bankAccountObject             :: Text
+    , bankAccountAccount            :: Text
+    , bankAccountHolderName         :: Text
+    , bankAccountHolderType         :: BankAccountHolderType
+    , bankAccountBankName           :: Text
+    , bankAccountCountry            :: Country
+    , bankAccountCurrency           :: Currency
+    , bankAccountCustomer           :: Text
+    , bankAccountDefaultForCurrency :: Bool
+    , bankAccountFingerprint        :: Text
+    , bankAccountLast4              :: Text
+    , bankAccountMetaData           :: MetaData
+    , bankAccountRoutingNumber      :: Text
+    , bankAccountStatus             :: BankAccountStatus
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -1343,13 +1279,33 @@ instance FromJSON BankAccount where
    parseJSON (Object o) =
      BankAccount <$> (BankAccountId <$> o .: "id")
                  <*> o .: "object"
-                 <*> o .: "last4"
+                 <*> o .: "account"
+                 <*> o .: "account_holder_name"
+                 <*> o .: "account_holder_type"
+                 <*> o .: "bank_name"
                  <*> (Country <$> o .: "country")
                  <*> o .: "currency"
-                 <*> o .:? "status"
-                 <*> o .:? "fingerprint"
-                 <*> o .: "bank_name"
+                 <*> o .: "customer"
+                 <*> o .: "default_for_currency"
+                 <*> o .: "fingerprint"
+                 <*> o .: "last4"
+                 <*> o .: "metadata"
+                 <*> o .: "routing_number"
+                 <*> o .: "status"
    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | `BankAccountHolderType` for `BankAccount`
+data BankAccountHolderType =
+  BankAccountHolderIndividual | BankAccountHolderCompany
+  deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | `BankAccountHolderType` JSON instance
+instance FromJSON BankAccountHolderType where
+    parseJSON (String "individual") = pure BankAccountHolderIndividual
+    parseJSON (String "company") = pure BankAccountHolderCompany
+    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `BankAccountId` for `BankAccount`
@@ -1359,15 +1315,16 @@ newtype BankAccountId = BankAccountId Text
 ------------------------------------------------------------------------------
 -- | `BankAccountStatus` Object
 data BankAccountStatus =
-  New | Validated | Verified | Errored
+  New | Validated | Verified | VerificationFailed | Errored
   deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | `BankAccountStatus` JSON instance
 instance FromJSON BankAccountStatus where
-   parseJSON (String "new") = pure $ New
+   parseJSON (String "new") = pure New
    parseJSON (String "validated") = pure Validated
    parseJSON (String "verified") = pure Verified
+   parseJSON (String "verification_failed") = pure VerificationFailed
    parseJSON (String "errored") = pure Errored
    parseJSON _ = mzero
 
@@ -1394,110 +1351,6 @@ data NewBankAccount = NewBankAccount
     , newBankAccountAccountNumber :: AccountNumber
     }
     deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | Recipients
-
-------------------------------------------------------------------------------
--- | `FirstName` of a `Recipient`
-newtype FirstName = FirstName Text deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | `LastName` of a `Recipient`
-newtype LastName = LastName Text deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | Middle Initial of a `Recipient`
-type MiddleInitial = Char
-
-------------------------------------------------------------------------------
--- | `RecipientId` for a `Recipient`
-newtype RecipientId =
-      RecipientId Text
-  deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | JSON Instance for `RecipientId`
-instance FromJSON RecipientId where
-   parseJSON (String x)   = pure $ RecipientId x
-   parseJSON _ = mzero
-
-------------------------------------------------------------------------------
--- | `TaxID`
-newtype TaxID  = TaxID { getTaxID :: Text }
-  deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | Type of `Recipient`
-data RecipientType =
-    Individual
-  | Corporation deriving (Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | `Show` instance for `RecipientType`
-instance Show RecipientType where
-    show Individual  = "individual"
-    show Corporation = "corporation"
-
-------------------------------------------------------------------------------
--- | `Read` instance for `RecipientType`
-instance Read RecipientType where
-  readPrec =
-    do (R.String s) <- lexP
-       case s of
-         "individual"  -> return Individual
-         "corporation" -> return Corporation
-         _             -> pfail
-
-------------------------------------------------------------------------------
--- | JSON Instance for `RecipientType`
-instance FromJSON RecipientType where
-   parseJSON (String "individual")  = pure Individual
-   parseJSON (String "corporation") = pure Corporation
-   parseJSON _ = mzero
-
-------------------------------------------------------------------------------
--- | Recipient Object
-data Recipient = Recipient {
-      recipientId            :: RecipientId
-    , recipientObject        :: Text
-    , recipientCreated       :: UTCTime
-    , recipientLiveMode      :: Bool
-    , recipientType          :: RecipientType
-    , recipientDescription   :: Maybe Description
-    , recipientEmail         :: Maybe Email
-    , recipientName          :: Name
-    , recipientVerified      :: Bool
-    , recipientActiveAccount :: Maybe BankAccount
-    , recipientCards         :: StripeList RecipientCard
-    , recipientDefaultCard   :: Maybe (Expandable RecipientCardId)
- } | DeletedRecipient {
-    deletedRecipient   :: Maybe Bool
-  , deletedRecipientId :: RecipientId
- } deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
--- | JSON Instance for `Recipient`
-instance FromJSON Recipient where
-   parseJSON (Object o) =
-      (Recipient <$> (RecipientId <$> o .: "id")
-                 <*> o .: "object"
-                 <*> (fromSeconds <$> o .: "created")
-                 <*> o .: "livemode"
-                 <*> o .: "type"
-                 <*> o .:? "description"
-                 <*> (fmap Email <$> o .:? "email")
-                 <*> o .: "name"
-                 <*> o .: "verified"
-                 <*> o .:? "active_account"
-                 <*> o .: "cards"
-                 <*> o .:? "default_card"
-      )
-      <|> DeletedRecipient
-                 <$> o .:? "deleted"
-                 <*> (RecipientId <$> o .: "id")
-
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `PlanId` for a `Plan`
@@ -1833,9 +1686,6 @@ data EventType =
   | CouponCreatedEvent
   | CouponUpdatedEvent
   | CouponDeletedEvent
-  | RecipientCreatedEvent
-  | RecipientUpdatedEvent
-  | RecipientDeletedEvent
   | TransferCreatedEvent
   | TransferUpdatedEvent
   | TransferReversedEvent
@@ -1888,9 +1738,6 @@ instance FromJSON EventType where
    parseJSON (String "coupon.created") = pure CouponCreatedEvent
    parseJSON (String "coupon.updated") = pure CouponUpdatedEvent
    parseJSON (String "coupon.deleted") = pure CouponDeletedEvent
-   parseJSON (String "recipient.created") = pure RecipientCreatedEvent
-   parseJSON (String "recipient.updated") = pure RecipientUpdatedEvent
-   parseJSON (String "recipient.deleted") = pure RecipientDeletedEvent
    parseJSON (String "transfer.created") = pure TransferCreatedEvent
    parseJSON (String "transfer.updated") = pure TransferUpdatedEvent
    parseJSON (String "transfer.reversed") = pure TransferReversedEvent
@@ -1912,7 +1759,6 @@ data EventData =
   | ApplicationFeeEvent ApplicationFee
   | InvoiceEvent Invoice
   | PlanEvent Plan
-  | RecipientEvent Recipient
   | CouponEvent Coupon
   | BalanceEvent Balance
   | ChargeEvent Charge
@@ -1992,9 +1838,6 @@ instance FromJSON Event where
         "coupon.created" -> CouponEvent <$> obj .: "object"
         "coupon.updated" -> CouponEvent <$> obj .: "object"
         "coupon.deleted" -> CouponEvent <$> obj .: "object"
-        "recipient.created" -> RecipientEvent <$> obj .: "object"
-        "recipient.updated" -> RecipientEvent <$> obj .: "object"
-        "recipient.deleted" -> RecipientEvent <$> obj .: "object"
         "transfer.created" -> TransferEvent <$> obj .: "object"
         "transfer.updated" -> TransferEvent <$> obj .: "object"
         "transfer.reversed" -> TransferEvent <$> obj .: "object"
@@ -2189,7 +2032,7 @@ newtype Prorate = Prorate Bool deriving (Read, Show, Eq, Ord, Data, Typeable)
 newtype AtPeriodEnd = AtPeriodEnd Bool deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
--- | `Email` associated with a `Customer`, `Recipient` or `Charge`
+-- | `Email` associated with a `Customer` or `Charge`
 newtype Email = Email Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------

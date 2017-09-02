@@ -18,7 +18,6 @@ import           Web.Stripe.Test.Dispute               (disputeTests)
 import           Web.Stripe.Test.Invoice               (invoiceTests)
 import           Web.Stripe.Test.InvoiceItem           (invoiceItemTests)
 import           Web.Stripe.Test.Plan                  (planTests)
-import           Web.Stripe.Test.Recipient             (recipientTests)
 import           Web.Stripe.Test.Refund                (refundTests)
 import           Web.Stripe.Test.Subscription          (subscriptionTests)
 import           Web.Stripe.Test.Token                 (tokenTests)
@@ -46,7 +45,6 @@ allTests stripe' = do
     invoiceItemTests stripe
     disputeTests stripe
     transferTests stripe
---    recipientTests stripe
     applicationFeeTests stripe
     applicationFeeRefundTests stripe
     accountTests stripe

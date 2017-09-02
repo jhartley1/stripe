@@ -36,6 +36,7 @@ import           Data.Text          (Text)
 import qualified Data.Text.Encoding as Text
 import           Numeric            (showFFloat)
 import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
+                                     AccountId(..),
                                      AddressCity(..), AddressCountry(..),
                                      ApplicationFeeId(..), AddressLine1(..),
                                      AddressLine2(..), AddressState(..),
@@ -59,17 +60,17 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      IntervalCount(..),
                                      InvoiceId(..), InvoiceItemId(..),
                                      InvoiceLineItemId(..),
-                                     IsVerified(..), MetaData(..), PlanId(..),
+                                     MetaData(..), PlanId(..),
                                      PlanName(..), Prorate(..), Limit(..),
                                      MaxRedemptions(..), Name(..),
                                      NewBankAccount(..), NewCard(..),
                                      PercentOff(..), Quantity(..), ReceiptEmail(..),
-                                     RecipientId(..), RecipientType(..), RedeemBy(..),
+                                     RedeemBy(..),
                                      RefundId(..),
                                      RefundApplicationFee(..), RefundReason(..),
                                      RoutingNumber(..), StartingAfter(..),
                                      StatementDescriptor(..), Source(..),
-                                     SubscriptionId(..), TaxID(..), 
+                                     SubscriptionId(..),
                                      TaxPercent(..), TimeRange(..),
                                      TokenId(..), TransactionId(..),
                                      TransactionType(..), TransferId(..),
@@ -110,6 +111,10 @@ data StripeRequest a = StripeRequest
 -- | convert a parameter to a key/value
 class ToStripeParam param where
   toStripeParam :: param -> [(ByteString, ByteString)] -> [(ByteString, ByteString)]
+
+instance ToStripeParam AccountId where
+  toStripeParam (AccountId aid) =
+    (("accountid", Text.encodeUtf8 aid) :)
 
 instance ToStripeParam Amount where
   toStripeParam (Amount i) =
@@ -310,10 +315,6 @@ instance ToStripeParam InvoiceLineItemId where
   toStripeParam (InvoiceLineItemId txt) =
     (("line_item", Text.encodeUtf8 txt) :)
 
-instance ToStripeParam IsVerified where
-  toStripeParam (IsVerified b) =
-    (("verified", if b then "true" else "false") :)
-
 instance ToStripeParam Limit where
   toStripeParam (Limit i) =
     (("limit", toBytestring i) :)
@@ -374,10 +375,6 @@ instance ToStripeParam Quantity where
   toStripeParam (Quantity i) =
     (("quantity", toBytestring i) :)
 
-instance ToStripeParam RecipientId where
-  toStripeParam (RecipientId rid) =
-    (("recipient", Text.encodeUtf8 rid) :)
-
 instance ToStripeParam RedeemBy where
   toStripeParam (RedeemBy time) =
     (("redeem_by", toBytestring $ toSeconds time) :)
@@ -390,10 +387,6 @@ instance ToStripeParam ReceiptEmail where
   toStripeParam (ReceiptEmail txt) =
     (("receipt_email", Text.encodeUtf8 txt) :)
 
-instance ToStripeParam RecipientType where
-  toStripeParam recipientType =
-    (("type", toBytestring recipientType) :)
-
 instance ToStripeParam a => ToStripeParam (Source a) where
   toStripeParam (Source param) =
     case toStripeParam param [] of
@@ -403,10 +396,6 @@ instance ToStripeParam a => ToStripeParam (Source a) where
 instance ToStripeParam SubscriptionId where
   toStripeParam (SubscriptionId sid) =
     (("subscription", Text.encodeUtf8 sid) :)
-
-instance ToStripeParam TaxID where
-  toStripeParam (TaxID tid) =
-    (("tax_id", Text.encodeUtf8 tid) :)
 
 instance ToStripeParam TaxPercent where
   toStripeParam (TaxPercent tax) =
