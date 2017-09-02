@@ -131,7 +131,7 @@ data Charge = Charge {
     , chargeAmount               :: Amount
     , chargeCurrency             :: Currency
     , chargeRefunded             :: Bool
-    , chargeCreditCard           :: Maybe Card
+    , chargeSource               :: Maybe Card
     , chargeCaptured             :: Bool
     , chargeRefunds              :: StripeList Refund
     , chargeBalanceTransaction   :: Maybe (Expandable TransactionId)
@@ -160,7 +160,7 @@ instance FromJSON Charge where
                <*> (Amount <$> o .: "amount")
                <*> o .: "currency"
                <*> o .: "refunded"
-               <*> o .:? "card"
+               <*> o .:? "source"
                <*> o .: "captured"
                <*> o .: "refunds"
                <*> o .:? "balance_transaction"
@@ -253,9 +253,9 @@ data Customer = Customer {
     , customerSubscriptions  :: StripeList Subscription
     , customerDiscount       :: Maybe Discount
     , customerAccountBalance :: Int
-    , customerCards          :: StripeList Card
+    , customerSources        :: StripeList Card
     , customerCurrency       :: Maybe Currency
-    , customerDefaultCard    :: Maybe (Expandable CardId)
+    , customerDefaultSource  :: Maybe (Expandable CardId)
     , customerMetaData       :: MetaData
     } | DeletedCustomer {
       deletedCustomer   :: Maybe Bool
@@ -277,9 +277,9 @@ instance FromJSON Customer where
            <*> o .: "subscriptions"
            <*> o .:? "discount"
            <*> o .: "account_balance"
-           <*> o .: "cards"
+           <*> o .: "sources"
            <*> o .:? "currency"
-           <*> o .:? "default_card"
+           <*> o .:? "default_source"
            <*> o .: "metadata"
            <|> DeletedCustomer
            <$> o .: "deleted"
@@ -1797,9 +1797,9 @@ data EventType =
   | CustomerCreatedEvent
   | CustomerUpdatedEvent
   | CustomerDeletedEvent
-  | CustomerCardCreatedEvent
-  | CustomerCardUpdatedEvent
-  | CustomerCardDeletedEvent
+  | CustomerSourceCreatedEvent
+  | CustomerSourceUpdatedEvent
+  | CustomerSourceDeletedEvent
   | CustomerSubscriptionCreatedEvent
   | CustomerSubscriptionUpdatedEvent
   | CustomerSubscriptionDeletedEvent
@@ -1853,9 +1853,9 @@ instance FromJSON EventType where
    parseJSON (String "customer.created") = pure CustomerCreatedEvent
    parseJSON (String "customer.updated") = pure CustomerUpdatedEvent
    parseJSON (String "customer.deleted") = pure CustomerDeletedEvent
-   parseJSON (String "customer.card.created") = pure CustomerCardCreatedEvent
-   parseJSON (String "customer.card.updated") = pure CustomerCardUpdatedEvent
-   parseJSON (String "customer.card.deleted") = pure CustomerCardDeletedEvent
+   parseJSON (String "customer.source.created") = pure CustomerSourceCreatedEvent
+   parseJSON (String "customer.source.updated") = pure CustomerSourceUpdatedEvent
+   parseJSON (String "customer.source.deleted") = pure CustomerSourceDeletedEvent
    parseJSON (String "customer.subscription.created") = pure CustomerSubscriptionCreatedEvent
    parseJSON (String "customer.subscription.updated") = pure CustomerSubscriptionUpdatedEvent
    parseJSON (String "customer.subscription.deleted") = pure CustomerSubscriptionDeletedEvent

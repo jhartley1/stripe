@@ -45,17 +45,17 @@ data StripeConfig = StripeConfig
 ------------------------------------------------------------------------------
 -- | API Version
 data APIVersion =
-    V20150216 -- ^ Stripe API Version for this package release
+    V20150218 -- ^ Stripe API Version for this package release
     deriving (Eq, Ord, Data, Typeable)
 
 instance Show APIVersion where
-    show V20150216 = "2015-02-16"
+    show V20150218 = "2015-02-18"
 
 instance Read APIVersion where
   readPrec =
     do (R.String s) <- lexP
        case s of
-         "2015-02-16" -> return V20150216
+         "2015-02-18" -> return V20150218
          _            -> pfail
 
 ------------------------------------------------------------------------------

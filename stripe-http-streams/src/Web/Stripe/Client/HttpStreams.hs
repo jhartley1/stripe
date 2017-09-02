@@ -128,7 +128,7 @@ callAPI conn fromJSON' StripeConfig {..} StripeRequest{..} = do
     http (m2m method) $ "/v1/" <> reqURL
     setAuthorizationBasic (getStripeKey secretKey) mempty
     setContentType "application/x-www-form-urlencoded"
-    setHeader "Stripe-Version" (toBytestring V20150216)
+    setHeader "Stripe-Version" (toBytestring V20150218)
     setHeader "Connection" "Keep-Alive"
     setTransferEncoding
   sendRequest conn req (encodedFormBody reqBody)
