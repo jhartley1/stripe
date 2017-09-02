@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE UndecidableInstances #-}
 ------------------------------------------------------------------------------
--- | 
+-- |
 -- Module      : Web.Stripe.Types
 -- Copyright   : (c) David Johnson, 2014
 -- Maintainer  : djohnson.m@gmail.com
@@ -1094,14 +1094,80 @@ data Dispute = Dispute {
     , disputeReason              :: DisputeReason
     , disputeIsChargeRefundable  :: Bool
     , disputeBalanceTransactions :: [BalanceTransaction]
-    , disputeEvidenceDueBy       :: UTCTime
-    , disputeEvidence            :: Maybe Evidence
+    , disputeEvidenceDetails     :: Maybe EvidenceDetails
+    , disputeEvidence            :: DisputeEvidence
     , disputeMetaData            :: MetaData
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
--- | `Evidence` associated with a `Dispute`
-newtype Evidence = Evidence Text deriving (Read, Show, Eq, Ord, Data, Typeable)
+-- | `DisputeEvidence` associated with a `Dispute`
+data DisputeEvidence = DisputeEvidence {
+      disputeEvidenceAccessActivityLog            :: Maybe Text
+    , disputeEvidenceBillingAddress               :: Maybe Text
+    , disputeEvidenceCancellationPolicy           :: Maybe Text -- newtype this
+    , disputeEvidenceCancellationPolicyDisclosure :: Maybe Text
+    , disputeEvidenceCancellationRebuttal         :: Maybe Text
+    , disputeEvidenceCustomerCommunication        :: Maybe Text -- newtype this
+    , disputeEvidenceCustomerEmailAddress         :: Maybe Text
+    , disputeEvidenceCustomerName                 :: Maybe Text
+    , disputeEvidenceCustomerPurchaseIp           :: Maybe Text
+    , disputeEvidenceCustomerSignature            :: Maybe Text -- newtype this
+    , disputeEvidenceDuplicateChargeDocumentation :: Maybe Text -- newtype this
+    , disputeEvidenceDuplicateChargeExplanation   :: Maybe Text
+    , disputeEvidenceDuplicateChargeId            :: Maybe Text
+    , disputeEvidenceProductDescription           :: Maybe Text
+    , disputeEvidenceReceipt                      :: Maybe Text -- newtype this
+    , disputeEvidenceRefundPolicy                 :: Maybe Text -- newtype this
+    , disputeEvidenceRefundPolicyDisclosure       :: Maybe Text
+    , disputeEvidenceRefundRefusalExplanation     :: Maybe Text
+    , disputeEvidenceServiceDate                  :: Maybe Text
+    , disputeEvidenceServiceDocumentation         :: Maybe Text
+    , disputeEvidenceShippingAddress              :: Maybe Text
+    , disputeEvidenceShippingDate                 :: Maybe Text
+    , disputeEvidenceShippingDocumentation        :: Maybe Text -- newtype this
+    , disputeEvidenceShippingTrackingNumber       :: Maybe Text
+    , disputeEvidenceUncategorizedFile            :: Maybe Text -- newtype this
+    , disputeEvidenceUncategorizedText            :: Maybe Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | create an empty `DisputeEvidence`
+mkDisputeEvidence :: DisputeEvidence
+mkDisputeEvidence = DisputeEvidence {
+      disputeEvidenceAccessActivityLog = Nothing
+    , disputeEvidenceBillingAddress = Nothing
+    , disputeEvidenceCancellationPolicy = Nothing
+    , disputeEvidenceCancellationPolicyDisclosure = Nothing
+    , disputeEvidenceCancellationRebuttal = Nothing
+    , disputeEvidenceCustomerCommunication = Nothing
+    , disputeEvidenceCustomerEmailAddress = Nothing
+    , disputeEvidenceCustomerName = Nothing
+    , disputeEvidenceCustomerPurchaseIp = Nothing
+    , disputeEvidenceCustomerSignature = Nothing
+    , disputeEvidenceDuplicateChargeDocumentation = Nothing
+    , disputeEvidenceDuplicateChargeExplanation = Nothing
+    , disputeEvidenceDuplicateChargeId = Nothing
+    , disputeEvidenceProductDescription = Nothing
+    , disputeEvidenceReceipt = Nothing
+    , disputeEvidenceRefundPolicy = Nothing
+    , disputeEvidenceRefundPolicyDisclosure = Nothing
+    , disputeEvidenceRefundRefusalExplanation = Nothing
+    , disputeEvidenceServiceDate = Nothing
+    , disputeEvidenceServiceDocumentation = Nothing
+    , disputeEvidenceShippingAddress = Nothing
+    , disputeEvidenceShippingDate = Nothing
+    , disputeEvidenceShippingDocumentation = Nothing
+    , disputeEvidenceShippingTrackingNumber = Nothing
+    , disputeEvidenceUncategorizedFile = Nothing
+    , disputeEvidenceUncategorizedText = Nothing
+    }
+
+------------------------------------------------------------------------------
+-- | `EvidenceDetails` associated with a `Dispute`
+data EvidenceDetails = EvidenceDetails {
+      evidenceDetailsDueBy           :: UTCTime
+    , evidenceDetailsSubmissionCount :: Int
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Dispute`
@@ -1117,9 +1183,49 @@ instance FromJSON Dispute where
                 <*> o .: "reason"
                 <*> o .: "is_charge_refundable"
                 <*> o .: "balance_transactions"
-                <*> (fromSeconds <$> o .: "evidence_due_by")
-                <*> (fmap Evidence <$> o .:? "evidence")
+                <*> o .: "evidence_details"
+                <*> o .: "evidence"
                 <*> o .: "metadata"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | JSON Instance for `DisputeEvidence`
+instance FromJSON DisputeEvidence where
+    parseJSON (Object o) =
+        DisputeEvidence <$> o .:? "access_activity_log"
+                        <*> o .:? "billing_address"
+                        <*> o .:? "cancellation_policy"
+                        <*> o .:? "cancellation_policy_disclosure"
+                        <*> o .:? "cancellation_rebuttal"
+                        <*> o .:? "customer_communication"
+                        <*> o .:? "customer_email_address"
+                        <*> o .:? "customer_name"
+                        <*> o .:? "customer_purchase_ip"
+                        <*> o .:? "customer_signature"
+                        <*> o .:? "duplicate_charge_documentation"
+                        <*> o .:? "duplicate_charge_explanation"
+                        <*> o .:? "duplicate_charge_id"
+                        <*> o .:? "product_description"
+                        <*> o .:? "receipt"
+                        <*> o .:? "refund_policy"
+                        <*> o .:? "refund_policy_disclosure"
+                        <*> o .:? "refund_refusal_explanation"
+                        <*> o .:? "service_date"
+                        <*> o .:? "service_documentation"
+                        <*> o .:? "shipping_address"
+                        <*> o .:? "shipping_date"
+                        <*> o .:? "shipping_documentation"
+                        <*> o .:? "shipping_tracking_number"
+                        <*> o .:? "uncategorized_file"
+                        <*> o .:? "uncategorized_text"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | JSON Instance for `EvidenceDetails`
+instance FromJSON EvidenceDetails where
+    parseJSON (Object o) =
+        EvidenceDetails <$> (fromSeconds <$> o .: "due_by")
+                        <*> o .: "submission_count"
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
@@ -2384,7 +2490,7 @@ data BitcoinReceiver = BitcoinReceiver {
     ,  btcMetadata              :: MetaData
     ,  btcRefundAddress         :: Maybe Text
     ,  btcTransactions          :: Maybe Transactions
-    ,  btcPayment               :: Maybe PaymentId 
+    ,  btcPayment               :: Maybe PaymentId
     ,  btcCustomer              :: Maybe CustomerId
     } deriving (Show, Eq)
 
@@ -2393,23 +2499,23 @@ data BitcoinReceiver = BitcoinReceiver {
 instance FromJSON BitcoinReceiver where
    parseJSON (Object o) =
      BitcoinReceiver <$> (BitcoinReceiverId <$> o .: "id")
-                     <*> o .: "object"  
-                     <*> (fromSeconds <$> o .: "created") 
-                     <*> o .: "livemode"  
-                     <*> o .: "active"  
-                     <*> o .: "amount"  
-                     <*> o .: "amount_received"  
-                     <*> o .: "bitcoin_amount"  
-                     <*> o .: "bitcoin_amount_received"  
-                     <*> o .: "bitcoin_uri"  
-                     <*> o .: "currency"  
-                     <*> o .: "filled"  
-                     <*> o .: "inbound_address"  
-                     <*> o .: "uncaptured_funds"  
-                     <*> o .:? "description"  
-                     <*> o .: "email"  
+                     <*> o .: "object"
+                     <*> (fromSeconds <$> o .: "created")
+                     <*> o .: "livemode"
+                     <*> o .: "active"
+                     <*> o .: "amount"
+                     <*> o .: "amount_received"
+                     <*> o .: "bitcoin_amount"
+                     <*> o .: "bitcoin_amount_received"
+                     <*> o .: "bitcoin_uri"
+                     <*> o .: "currency"
+                     <*> o .: "filled"
+                     <*> o .: "inbound_address"
+                     <*> o .: "uncaptured_funds"
+                     <*> o .:? "description"
+                     <*> o .: "email"
                      <*> (MetaData . H.toList <$> o .: "metadata")
-                     <*> o .:? "refund_address"  
+                     <*> o .:? "refund_address"
                      <*> o .:? "transactions"
                      <*> (fmap PaymentId <$> o .:? "payment")
                      <*> (fmap CustomerId <$> o .:? "customer")
@@ -2429,11 +2535,11 @@ data Transactions = Transactions {
 -- | Bitcoin Transactions data
 instance FromJSON Transactions where
    parseJSON (Object o) =
-     Transactions <$> o .: "object"  
-                  <*> o .: "total_count"  
-                  <*> o .: "has_more"  
-                  <*> o .: "url"  
-                  <*> o .: "data"  
+     Transactions <$> o .: "object"
+                  <*> o .: "total_count"
+                  <*> o .: "has_more"
+                  <*> o .: "url"
+                  <*> o .: "data"
    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------

@@ -52,7 +52,7 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      DefaultCard(..), Description(..),
                                      Duration(..), DurationInMonths(..),
                                      Email(..), EndingBefore(..), EventId(..),
-                                     Evidence(..), Expandable(..),
+                                     DisputeEvidence(..), Expandable(..),
                                      ExpandParams(..), ExpMonth(..),
                                      ExpYear(..), Forgiven(..), Interval(..),
                                      IntervalCount(..),
@@ -222,6 +222,37 @@ instance ToStripeParam Description where
   toStripeParam (Description txt) =
     (("description", Text.encodeUtf8 txt) :)
 
+instance ToStripeParam DisputeEvidence where
+  toStripeParam DisputeEvidence{..} =
+    ((getParams
+        [ ("evidence[access_activity_log]", disputeEvidenceAccessActivityLog)
+        , ("evidence[billing_address]", disputeEvidenceBillingAddress)
+        , ("evidence[cancellation_policy]", disputeEvidenceCancellationPolicy)
+        , ("evidence[cancellation_policy_disclosure]", disputeEvidenceCancellationPolicyDisclosure)
+        , ("evidence[cancellation_rebuttal]", disputeEvidenceCancellationRebuttal)
+        , ("evidence[customer_communication]", disputeEvidenceCustomerCommunication)
+        , ("evidence[customer_email_address]", disputeEvidenceCustomerEmailAddress)
+        , ("evidence[customer_name]", disputeEvidenceCustomerName)
+        , ("evidence[customer_purchase_ip]", disputeEvidenceCustomerPurchaseIp)
+        , ("evidence[customer_signature]", disputeEvidenceCustomerSignature)
+        , ("evidence[duplicate_charge_documentation]", disputeEvidenceDuplicateChargeDocumentation)
+        , ("evidence[duplicate_charge_explanation]", disputeEvidenceDuplicateChargeExplanation)
+        , ("evidence[duplicate_charge_id]", disputeEvidenceDuplicateChargeId)
+        , ("evidence[product_description]", disputeEvidenceProductDescription)
+        , ("evidence[receipt]", disputeEvidenceReceipt)
+        , ("evidence[refund_policy]", disputeEvidenceRefundPolicy)
+        , ("evidence[refund_policy_disclosure]", disputeEvidenceRefundPolicyDisclosure)
+        , ("evidence[refund_refusal_explanation]", disputeEvidenceRefundRefusalExplanation)
+        , ("evidence[service_date]", disputeEvidenceServiceDate)
+        , ("evidence[service_documentation]", disputeEvidenceServiceDocumentation)
+        , ("evidence[shipping_address]", disputeEvidenceShippingAddress)
+        , ("evidence[shipping_date]", disputeEvidenceShippingDate)
+        , ("evidence[shipping_documentation]", disputeEvidenceShippingDocumentation)
+        , ("evidence[shipping_tracking_number]", disputeEvidenceShippingTrackingNumber)
+        , ("evidence[uncategorized_file]", disputeEvidenceUncategorizedFile)
+        , ("evidence[uncategorized_text]", disputeEvidenceUncategorizedText)
+        ]) ++)
+
 instance ToStripeParam Duration where
   toStripeParam duration =
     (("duration", toBytestring duration) :)
@@ -237,10 +268,6 @@ instance ToStripeParam Email where
 instance ToStripeParam EventId where
   toStripeParam (EventId eid) =
     (("event", Text.encodeUtf8 eid) :)
-
-instance ToStripeParam Evidence where
-  toStripeParam (Evidence txt) =
-    (("evidence", Text.encodeUtf8 txt) :)
 
 instance ToStripeParam ExpandParams where
   toStripeParam (ExpandParams params) =

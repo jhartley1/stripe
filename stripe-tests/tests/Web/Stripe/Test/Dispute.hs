@@ -42,7 +42,7 @@ disputeTests stripe = do
       result `shouldSatisfy` isRight
       let Right Dispute {..} = result
       disputeMetaData `shouldBe` meta
-      disputeEvidence `shouldBe` (Just evi)
+      disputeEvidence `shouldBe` evi
       disputeStatus `shouldBe` UnderReview
     it "Wins a Dispute" $ do
       result <- stripe $ do
@@ -57,7 +57,7 @@ disputeTests stripe = do
       result `shouldSatisfy` isRight
       let Right Dispute {..} = result
       disputeMetaData `shouldBe` meta
-      disputeEvidence `shouldBe` (Just win)
+      disputeEvidence `shouldBe` win
       disputeStatus `shouldBe` Won
     it "Loses a Dispute" $ do
       result <- stripe $ do
@@ -72,7 +72,7 @@ disputeTests stripe = do
       result `shouldSatisfy` isRight
       let Right Dispute {..} = result
       disputeMetaData `shouldBe` meta
-      disputeEvidence `shouldBe` (Just lose)
+      disputeEvidence `shouldBe` lose
       disputeStatus `shouldBe` Lost
     it "Closes a Dispute" $ do
       result <- stripe $ do
@@ -90,9 +90,9 @@ disputeTests stripe = do
     em  = ExpMonth 12
     ey  = ExpYear 2020
     cvc = CVC "123"
-    win  = Evidence "winning_evidence"
-    lose = Evidence "losing_evidence"
-    evi = Evidence "some evidence"
+    win  = mkDisputeEvidence { disputeEvidenceUncategorizedText = Just "winning_evidence" }
+    lose = mkDisputeEvidence { disputeEvidenceUncategorizedText = Just "losing_evidence" }
+    evi = mkDisputeEvidence { disputeEvidenceUncategorizedText = Just "some evidence" }
     meta = MetaData [ ("some", "metadata") ]
     cardinfo =
       (mkNewCard cn em ey) { newCardCVC = Just cvc }
