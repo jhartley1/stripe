@@ -1694,7 +1694,7 @@ data BalanceTransaction = BalanceTransaction {
     , balanceTransactionStatus         :: Text
     , balanceTransactionFee            :: Int
     , balanceTransactionFeeDetails     :: [FeeDetails]
-    , balanceTransactionFeeSource      :: Expandable ChargeId
+    , balanceTransactionFeeSource      :: Expandable ChargeId -- todo
     , balanceTransactionFeeDescription :: Maybe Description
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
