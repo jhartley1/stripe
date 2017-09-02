@@ -52,6 +52,7 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      DefaultCard(..), Description(..),
                                      Duration(..), DurationInMonths(..),
                                      Email(..), EndingBefore(..), EventId(..),
+                                     Discountable(..),
                                      DisputeEvidence(..), Expandable(..),
                                      ExpandParams(..), ExpMonth(..),
                                      ExpYear(..), Forgiven(..), Interval(..),
@@ -221,6 +222,10 @@ instance ToStripeParam DefaultCard where
 instance ToStripeParam Description where
   toStripeParam (Description txt) =
     (("description", Text.encodeUtf8 txt) :)
+
+instance ToStripeParam Discountable where
+  toStripeParam (Discountable b) =
+    (("discountable", if b then "true" else "false") :)
 
 instance ToStripeParam DisputeEvidence where
   toStripeParam DisputeEvidence{..} =

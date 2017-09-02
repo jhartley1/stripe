@@ -908,6 +908,12 @@ instance FromJSON Invoice where
    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
+-- | Whether a `InvoiceLineItem` or `InvoiceItem` is discountable
+newtype Discountable
+    = Discountable Bool
+      deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
 -- | `InvoiceItemId` for `InvoiceItem`
 newtype InvoiceItemId
     = InvoiceItemId Text
@@ -923,6 +929,7 @@ data InvoiceItem = InvoiceItem {
     , invoiceItemLiveMode     :: Bool
     , invoiceItemProration    :: Bool
     , invoiceItemCurrency     :: Currency
+    , invoiceItemDiscountable :: Discountable
     , invoiceItemCustomer     :: Expandable CustomerId
     , invoiceItemDescription  :: Maybe Description
     , invoiceItemInvoice      :: Maybe (Expandable InvoiceId)
@@ -942,6 +949,7 @@ instance FromJSON InvoiceItem where
                    <*> o .: "livemode"
                    <*> o .: "proration"
                    <*> o .: "currency"
+                   <*> (Discountable <$> o .: "discountable")
                    <*> o .: "customer"
                    <*> o .:? "description"
                    <*> o .:? "invoice"
@@ -972,18 +980,19 @@ instance FromJSON InvoiceLineItemType where
 ------------------------------------------------------------------------------
 -- | `InvoiceLineItem` Object
 data InvoiceLineItem = InvoiceLineItem {
-      invoiceLineItemId          :: InvoiceLineItemId
-    , invoiceLineItemObject      :: Text
-    , invoiceLineItemType        :: InvoiceLineItemType
-    , invoiceLineItemLiveMode    :: Bool
-    , invoiceLineItemAmount      :: Int
-    , invoiceLineItemCurrency    :: Currency
-    , invoiceLineItemProration   :: Bool
-    , invoiceLineItemPeriod      :: Period
-    , invoiceLineItemQuantity    :: Maybe Quantity
-    , invoiceLineItemPlan        :: Maybe Plan
-    , invoiceLineItemDescription :: Maybe Description
-    , invoiceLineItemMetaData    :: MetaData
+      invoiceLineItemId           :: InvoiceLineItemId
+    , invoiceLineItemObject       :: Text
+    , invoiceLineItemType         :: InvoiceLineItemType
+    , invoiceLineItemLiveMode     :: Bool
+    , invoiceLineItemAmount       :: Int
+    , invoiceLineItemCurrency     :: Currency
+    , invoiceLineItemDiscountable :: Discountable
+    , invoiceLineItemProration    :: Bool
+    , invoiceLineItemPeriod       :: Period
+    , invoiceLineItemQuantity     :: Maybe Quantity
+    , invoiceLineItemPlan         :: Maybe Plan
+    , invoiceLineItemDescription  :: Maybe Description
+    , invoiceLineItemMetaData     :: MetaData
   } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -1011,6 +1020,7 @@ instance FromJSON InvoiceLineItem where
                        <*> o .: "livemode"
                        <*> o .: "amount"
                        <*> o .: "currency"
+                       <*> (Discountable <$> o .: "discountable")
                        <*> o .: "proration"
                        <*> o .: "period"
                        <*> (fmap Quantity <$> o .:? "quantity")
