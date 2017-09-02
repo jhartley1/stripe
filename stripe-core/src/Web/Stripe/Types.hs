@@ -1037,6 +1037,7 @@ newtype Forgiven =
 data DisputeStatus
     = WarningNeedsResponse
     | WarningUnderReview
+    | WarningClosed
     | NeedsResponse
     | UnderReview
     | ChargeRefunded
@@ -1075,6 +1076,7 @@ instance FromJSON DisputeStatus where
    parseJSON (String "needs_response") = pure NeedsResponse
    parseJSON (String "warning_needs_response") = pure WarningNeedsResponse
    parseJSON (String "warning_under_review") = pure WarningUnderReview
+   parseJSON (String "warning_closed") = pure WarningClosed
    parseJSON (String "under_review") = pure UnderReview
    parseJSON (String "charge_refunded") = pure ChargeRefunded
    parseJSON (String "won") = pure Won
@@ -1823,7 +1825,7 @@ data EventType =
   | RecipientDeletedEvent
   | TransferCreatedEvent
   | TransferUpdatedEvent
-  | TransferCanceledEvent
+  | TransferReversedEvent
   | TransferPaidEvent
   | TransferFailedEvent
   | PingEvent
@@ -1878,7 +1880,7 @@ instance FromJSON EventType where
    parseJSON (String "recipient.deleted") = pure RecipientDeletedEvent
    parseJSON (String "transfer.created") = pure TransferCreatedEvent
    parseJSON (String "transfer.updated") = pure TransferUpdatedEvent
-   parseJSON (String "transfer.canceled") = pure TransferCanceledEvent
+   parseJSON (String "transfer.reversed") = pure TransferReversedEvent
    parseJSON (String "transfer.paid") = pure TransferPaidEvent
    parseJSON (String "transfer.failed") = pure TransferFailedEvent
    parseJSON (String "ping") = pure PingEvent
@@ -1982,7 +1984,7 @@ instance FromJSON Event where
         "recipient.deleted" -> RecipientEvent <$> obj .: "object"
         "transfer.created" -> TransferEvent <$> obj .: "object"
         "transfer.updated" -> TransferEvent <$> obj .: "object"
-        "transfer.canceled" -> TransferEvent <$> obj .: "object"
+        "transfer.reversed" -> TransferEvent <$> obj .: "object"
         "transfer.paid" -> TransferEvent <$> obj .: "object"
         "transfer.failed" -> TransferEvent <$> obj .: "object"
         "ping" -> pure Ping
