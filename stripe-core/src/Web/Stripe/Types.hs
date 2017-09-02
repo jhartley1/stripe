@@ -1250,6 +1250,7 @@ newtype TransferId =
 data TransferStatus =
     TransferPaid
   | TransferPending
+  | TransferInTransit
   | TransferCanceled
   | TransferFailed
   deriving (Read, Show, Eq, Ord, Data, Typeable)
@@ -1271,10 +1272,12 @@ instance FromJSON TransferType where
 ------------------------------------------------------------------------------
 -- | JSON Instance for `TransferStatus`
 instance FromJSON TransferStatus where
-    parseJSON (String "paid")     = pure TransferPaid
-    parseJSON (String "pending")  = pure TransferPending
-    parseJSON (String "canceled") = pure TransferCanceled
-    parseJSON _                   = mzero
+    parseJSON (String "paid")       = pure TransferPaid
+    parseJSON (String "pending")    = pure TransferPending
+    parseJSON (String "in_transit") = pure TransferInTransit
+    parseJSON (String "canceled")   = pure TransferCanceled
+    parseJSON (String "failed")     = pure TransferFailed
+    parseJSON _                     = mzero
 
 ------------------------------------------------------------------------------
 -- | `Transfer` Object
