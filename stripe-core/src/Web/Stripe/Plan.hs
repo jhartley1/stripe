@@ -54,7 +54,7 @@ module Web.Stripe.Plan
     , PlanId              (..)
     , PlanName            (..)
     , StartingAfter       (..)
-    , StatementDescription(..)
+    , StatementDescriptor (..)
     , StripeDeleteResult  (..)
     , StripeList          (..)
     , TrialPeriodDays     (..)
@@ -71,7 +71,7 @@ import           Web.Stripe.Types         (PlanId (..) , Plan (..), PlanName(..)
                                            Limit(..), StartingAfter(..),
                                            EndingBefore(..), StripeDeleteResult(..),
                                            Currency (..), Amount(..),
-                                           StatementDescription(..), MetaData(..))
+                                           StatementDescriptor(..), MetaData(..))
 import           Web.Stripe.Util          ((</>))
 
 ------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ type instance StripeReturn CreatePlan = Plan
 instance StripeHasParam CreatePlan IntervalCount
 instance StripeHasParam CreatePlan TrialPeriodDays
 instance StripeHasParam CreatePlan MetaData
-instance StripeHasParam CreatePlan StatementDescription
+instance StripeHasParam CreatePlan StatementDescriptor
 
 ------------------------------------------------------------------------------
 -- | Retrieve a `Plan`
@@ -135,7 +135,7 @@ data UpdatePlan
 type instance StripeReturn UpdatePlan = Plan
 instance StripeHasParam UpdatePlan PlanName
 instance StripeHasParam UpdatePlan MetaData
-instance StripeHasParam UpdatePlan StatementDescription
+instance StripeHasParam UpdatePlan StatementDescriptor
 
 ------------------------------------------------------------------------------
 -- | Delete a `Plan`

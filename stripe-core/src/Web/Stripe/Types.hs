@@ -113,12 +113,12 @@ instance FromJSON ChargeId where
    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
--- | `StatementDescription` to be added to a `Charge`
-newtype StatementDescription =
-  StatementDescription Text deriving (Read, Show, Eq, Ord, Data, Typeable)
+-- | `StatementDescriptor` to be added to a `Charge`
+newtype StatementDescriptor =
+  StatementDescriptor Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
-instance FromJSON StatementDescription where
-  parseJSON v = StatementDescription <$> parseJSON v
+instance FromJSON StatementDescriptor where
+  parseJSON v = StatementDescriptor <$> parseJSON v
 
 ------------------------------------------------------------------------------
 -- | `Charge` object in `Stripe` API
@@ -143,7 +143,7 @@ data Charge = Charge {
     , chargeDescription          :: Maybe Description
     , chargeDispute              :: Maybe Dispute
     , chargeMetaData             :: MetaData
-    , chargeStatementDescription :: Maybe StatementDescription
+    , chargeStatementDescriptor  :: Maybe StatementDescriptor
     , chargeReceiptEmail         :: Maybe Text
     , chargeReceiptNumber        :: Maybe Text
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
@@ -172,7 +172,7 @@ instance FromJSON Charge where
                <*> o .:? "description"
                <*> o .:? "dispute"
                <*> o .: "metadata"
-               <*> o .:? "statement_description"
+               <*> o .:? "statement_descriptor"
                <*> o .:? "receipt_email"
                <*> o .:? "receipt_number"
     parseJSON _ = mzero
@@ -624,18 +624,18 @@ newtype PlanId = PlanId Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 ------------------------------------------------------------------------------
 -- | Plan object
 data Plan = Plan {
-      planInterval        :: Interval
-    , planName            :: Text
-    , planCreated         :: UTCTime
-    , planAmount          :: Int
-    , planCurrency        :: Currency
-    , planId              :: PlanId
-    , planObject          :: Text
-    , planLiveMode        :: Bool
-    , planIntervalCount   :: Maybe Int -- optional, max of 1 year intervals allowed, default 1
-    , planTrialPeriodDays :: Maybe Int
-    , planMetaData        :: MetaData
-    , planDescription     :: Maybe StatementDescription
+      planInterval            :: Interval
+    , planName                :: Text
+    , planCreated             :: UTCTime
+    , planAmount              :: Int
+    , planCurrency            :: Currency
+    , planId                  :: PlanId
+    , planObject              :: Text
+    , planLiveMode            :: Bool
+    , planIntervalCount       :: Maybe Int -- optional, max of 1 year intervals allowed, default 1
+    , planTrialPeriodDays     :: Maybe Int
+    , planMetaData            :: MetaData
+    , planStatementDescriptor :: Maybe StatementDescriptor
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -653,7 +653,7 @@ instance FromJSON Plan where
              <*> o .:? "interval_count"
              <*> o .:? "trial_period_days"
              <*> o .: "metadata"
-             <*> o .:? "statement_description"
+             <*> o .:? "statement_descriptor"
    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
@@ -868,7 +868,7 @@ data Invoice = Invoice {
     , invoiceDiscount             :: Maybe Discount
     , invoiceApplicateFee         :: Maybe FeeId
     , invoiceSubscription         :: Maybe SubscriptionId
-    , invoiceStatementDescription :: Maybe StatementDescription
+    , invoiceStatementDescriptor  :: Maybe StatementDescriptor
     , invoiceDescription          :: Maybe Description
     , invoiceMetaData             :: MetaData
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
@@ -902,7 +902,7 @@ instance FromJSON Invoice where
                <*> o .:? "discount"
                <*> (fmap FeeId <$> o .:? "application_fee")
                <*> (fmap SubscriptionId <$> o .: "subscription")
-               <*> o .:? "statement_description"
+               <*> o .:? "statement_descriptor"
                <*> o .:? "description"
                <*> o .: "metadata"
    parseJSON _ = mzero
@@ -1281,7 +1281,7 @@ data Transfer = Transfer {
      , transferBankAccount          :: Maybe BankAccount
      , transferFailureMessage       :: Maybe Text
      , transferFailureCode          :: Maybe Text
-     , transferStatementDescription :: Maybe StatementDescription
+     , transferStatementDescriptor  :: Maybe StatementDescriptor
      , transferRecipient            :: Maybe (Expandable RecipientId)
      , transferMetaData             :: MetaData
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
@@ -1304,7 +1304,7 @@ instance FromJSON Transfer where
                     <*> o .:? "bank_account"
                     <*> o .:? "failure_message"
                     <*> o .:? "failure_code"
-                    <*> o .:? "statement_description"
+                    <*> o .:? "statement_descriptor"
                     <*> o .:? "recipient"
                     <*> o .: "metadata"
     parseJSON _ = mzero
@@ -1593,7 +1593,7 @@ instance FromJSON AccountId where
 data Account = Account {
        accountId                   :: AccountId
      , accountEmail                :: Email
-     , accountStatementDescriptor  :: Maybe Description
+     , accountStatementDescriptor  :: Maybe StatementDescriptor
      , accountDisplayName          :: Maybe Text
      , accountTimeZone             :: Text
      , accountDetailsSubmitted     :: Bool

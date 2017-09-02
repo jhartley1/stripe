@@ -56,7 +56,7 @@ module Web.Stripe.Transfer
     , Recipient       (..)
     , RecipientId     (..)
     , StartingAfter   (..)
-    , StatementDescription (..)
+    , StatementDescriptor (..)
     , StripeList      (..)
     , Transfer        (..)
     , TransferId      (..)
@@ -75,7 +75,7 @@ import           Web.Stripe.Types         (Amount(..), BankAccountId(..), Card(.
                                            ExpandParams(..),
                                            Limit(..), MetaData(..), Recipient (..),
                                            RecipientId(..), StartingAfter(..),
-                                           StatementDescription(..),
+                                           StatementDescriptor(..),
                                            StripeList (..), Transfer (..),
                                            TransferId (..), TransferStatus (..),
                                            Description(..), TransferType (..))
@@ -103,7 +103,7 @@ type instance StripeReturn CreateTransfer = Transfer
 instance StripeHasParam CreateTransfer Description
 instance StripeHasParam CreateTransfer BankAccountId
 instance StripeHasParam CreateTransfer CardId
-instance StripeHasParam CreateTransfer StatementDescription
+instance StripeHasParam CreateTransfer StatementDescriptor
 instance StripeHasParam CreateTransfer MetaData
 
 ------------------------------------------------------------------------------
