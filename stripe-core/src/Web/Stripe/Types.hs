@@ -53,6 +53,7 @@ type instance ExpandsTo AccountId       = Account
 type instance ExpandsTo CardId          = Card
 type instance ExpandsTo ChargeId        = Charge
 type instance ExpandsTo CustomerId      = Customer
+type instance ExpandsTo DisputeId       = Dispute
 type instance ExpandsTo InvoiceId       = Invoice
 type instance ExpandsTo InvoiceItemId   = InvoiceItem
 type instance ExpandsTo TransactionId   = BalanceTransaction
@@ -139,7 +140,7 @@ data Charge = Charge {
     , chargeCustomerId           :: Maybe (Expandable CustomerId)
     , chargeInvoice              :: Maybe (Expandable InvoiceId)
     , chargeDescription          :: Maybe Description
-    , chargeDispute              :: Maybe Dispute
+    , chargeDispute              :: Maybe (Expandable DisputeId)
     , chargeMetaData             :: MetaData
     , chargeStatementDescriptor  :: Maybe StatementDescriptor
     , chargeReceiptEmail         :: Maybe Text
@@ -1058,6 +1059,11 @@ data Dispute = Dispute {
 newtype DisputeId =
     DisputeId Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
+-- | JSON instance for `DisputeId`
+instance FromJSON DisputeId where
+    parseJSON (String t) = pure $ DisputeId t
+    parseJSON _ = mzero
+
 ------------------------------------------------------------------------------
 -- | `DisputeEvidence` associated with a `Dispute`
 data DisputeEvidence = DisputeEvidence {
@@ -1460,9 +1466,7 @@ instance FromJSON AccountId where
 data Account = Account {
       accountId                   :: AccountId
     , accountEmail                :: Email
-    , accountStatementDescriptor  :: Maybe StatementDescriptor
     , accountDisplayName          :: Maybe Text
-    , accountTimeZone             :: Text
     , accountDetailsSubmitted     :: Bool
     , accountChargesEnabled       :: Bool
     , accountDefaultCurrency      :: Currency
@@ -1471,8 +1475,11 @@ data Account = Account {
     , accountBusinessName         :: Maybe Text
     , accountBusinessURL          :: Maybe Text
     , accountBusinessLogo         :: Maybe Text
+    , accountStatementDescriptor  :: Maybe StatementDescriptor
     , accountSupportEmail         :: Maybe Text
     , accountSupportPhone         :: Maybe Text
+    , accountTimeZone             :: Text
+    , accountType                 :: AccountType
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -1481,9 +1488,7 @@ instance FromJSON Account where
    parseJSON (Object o) =
        Account <$> (AccountId <$> o .:  "id")
                <*> (Email <$> o .:  "email")
-               <*> o .:?  "statement_descriptor"
                <*> o .:   "display_name"
-               <*> o .:   "timezone"
                <*> o .:   "details_submitted"
                <*> o .:   "charges_enabled"
                <*> o .:   "default_currency"
@@ -1492,9 +1497,27 @@ instance FromJSON Account where
                <*> o .:?  "business_name"
                <*> o .:?  "business_url"
                <*> o .:?  "business_logo"
+               <*> o .:?  "statement_descriptor"
                <*> o .:?  "support_email"
                <*> o .:?  "support_phone"
+               <*> o .:   "timezone"
+               <*> o .:   "type"
    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | type for an `Account`
+data AccountType
+    = AccountTypeStandard
+    | AccountTypeExpress
+    | AccountTypeCustom
+      deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `AccountType`
+instance FromJSON AccountType where
+    parseJSON (String "standard") = pure AccountTypeStandard
+    parseJSON (String "express") = pure AccountTypeExpress
+    parseJSON (String "custom") = pure AccountTypeCustom
+    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `Balance` Object
