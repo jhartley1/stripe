@@ -59,7 +59,6 @@ module Web.Stripe.Transfer
     , StripeList      (..)
     , Transfer        (..)
     , TransferId      (..)
-    , TransferStatus  (..)
     , TransferType    (..)
     , Limit           (..)
     ) where
@@ -75,7 +74,7 @@ import           Web.Stripe.Types         (AccountId(..), Amount(..), BankAccoun
                                            Limit(..), MetaData(..), StartingAfter(..),
                                            StatementDescriptor(..),
                                            StripeList (..), Transfer (..),
-                                           TransferId (..), TransferStatus (..),
+                                           TransferId (..),
                                            Description(..), TransferType (..))
 
 ------------------------------------------------------------------------------
@@ -168,4 +167,3 @@ instance StripeHasParam GetTransfers Date
 instance StripeHasParam GetTransfers (EndingBefore TransferId)
 instance StripeHasParam GetTransfers Limit
 instance StripeHasParam GetTransfers (StartingAfter TransferId)
-instance StripeHasParam GetTransfers TransferStatus

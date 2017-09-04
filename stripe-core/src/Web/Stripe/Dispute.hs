@@ -31,13 +31,16 @@
 -- @
 module Web.Stripe.Dispute
     ( -- * API
-      UpdateDispute
+      GetDispute
+    , getDispute
+    , UpdateDispute
     , updateDispute
     , CloseDispute
     , closeDispute
       -- * Types
     , ChargeId        (..)
     , Dispute         (..)
+    , DisputeId       (..)
     , DisputeReason   (..)
     , DisputeStatus   (..)
     , DisputeEvidence (..)
@@ -45,17 +48,32 @@ module Web.Stripe.Dispute
     , mkDisputeEvidence
     ) where
 
-import           Web.Stripe.StripeRequest (Method (POST),
+import           Web.Stripe.StripeRequest (Method (POST, GET),
                                            StripeHasParam, StripeRequest (..),
                                            StripeReturn,
                                            mkStripeRequest)
 import           Web.Stripe.Util          ((</>))
 import           Web.Stripe.Types         (ChargeId (..), Dispute (..),
+                                           DisputeId (..),
                                            DisputeReason (..),
                                            DisputeStatus (..),
                                            DisputeEvidence (..), MetaData(..),
                                            mkDisputeEvidence)
 import           Web.Stripe.Types.Util    (getChargeId)
+
+------------------------------------------------------------------------------
+-- | Retrieve a `Dispute`
+getDispute
+    :: DisputeId      -- ^ The ID of the Dispute to be retrieved
+    -> StripeRequest GetDispute
+getDispute
+    (DisputeId disputeid) = request
+  where request = mkStripeRequest GET url params
+        url = "disputes" </> disputeid
+        params = []
+
+data GetDispute
+type instance StripeReturn GetDispute = Dispute
 
 ------------------------------------------------------------------------------
 -- | `Dispute` to be updated

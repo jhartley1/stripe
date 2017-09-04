@@ -996,6 +996,11 @@ instance FromJSON DisputeReason where
    parseJSON (String "product_not_received") = pure ProductNotReceived
    parseJSON (String "credit_not_processed") = pure CreditNotProcessed
    parseJSON (String "general") = pure General
+   parseJSON (String "incorrect_account_details") = pure IncorrectAccountDetails
+   parseJSON (String "insufficient_funds") = pure InsufficientFunds
+   parseJSON (String "bank_cannot_process") = pure BankCannotProcess
+   parseJSON (String "debit_not_authorized") = pure DebitNotAuthorized
+   parseJSON (String "customer_initiated") = pure CustomerInitiated
    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
@@ -1009,6 +1014,11 @@ data DisputeReason
     | Unrecognized
     | CreditNotProcessed
     | General
+    | IncorrectAccountDetails
+    | InsufficientFunds
+    | BankCannotProcess
+    | DebitNotAuthorized
+    | CustomerInitiated
       deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -1027,7 +1037,8 @@ instance FromJSON DisputeStatus where
 ------------------------------------------------------------------------------
 -- | `Dispute` Object
 data Dispute = Dispute {
-      disputeChargeId            :: Expandable ChargeId
+      disputeId                  :: DisputeId
+    , disputeChargeId            :: Expandable ChargeId
     , disputeAmount              :: Int
     , disputeCreated             :: UTCTime
     , disputeStatus              :: DisputeStatus
@@ -1041,6 +1052,11 @@ data Dispute = Dispute {
     , disputeEvidence            :: DisputeEvidence
     , disputeMetaData            :: MetaData
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | `DisputeId` for a `Dispute`
+newtype DisputeId =
+    DisputeId Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | `DisputeEvidence` associated with a `Dispute`
@@ -1116,7 +1132,8 @@ data EvidenceDetails = EvidenceDetails {
 -- | JSON Instance for `Dispute`
 instance FromJSON Dispute where
     parseJSON (Object o) =
-        Dispute <$> o .: "charge"
+        Dispute <$> (DisputeId <$> o .: "id")
+                <*> o .: "charge"
                 <*> o .: "amount"
                 <*> (fromSeconds <$> o .: "created")
                 <*> o .: "status"
@@ -1177,38 +1194,22 @@ newtype TransferId =
   TransferId Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
--- | Status of a `Transfer`
-data TransferStatus =
-    TransferPaid
-  | TransferPending
-  | TransferInTransit
-  | TransferCanceled
-  | TransferFailed
-  deriving (Read, Show, Eq, Ord, Data, Typeable)
-
-------------------------------------------------------------------------------
 -- | Type of a `Transfer`
 data TransferType =
     CardTransfer
   | BankAccountTransfer
+  | BitcoinReceiverTransfer
+  | AlipayAccountTransfer
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `TransferType`
 instance FromJSON TransferType where
-    parseJSON (String "card")         = pure CardTransfer
-    parseJSON (String "bank_account") = pure BankAccountTransfer
-    parseJSON _                       = mzero
-
-------------------------------------------------------------------------------
--- | JSON Instance for `TransferStatus`
-instance FromJSON TransferStatus where
-    parseJSON (String "paid")       = pure TransferPaid
-    parseJSON (String "pending")    = pure TransferPending
-    parseJSON (String "in_transit") = pure TransferInTransit
-    parseJSON (String "canceled")   = pure TransferCanceled
-    parseJSON (String "failed")     = pure TransferFailed
-    parseJSON _                     = mzero
+    parseJSON (String "card")             = pure CardTransfer
+    parseJSON (String "bank_account")     = pure BankAccountTransfer
+    parseJSON (String "bitcoin_receiver") = pure BitcoinReceiverTransfer
+    parseJSON (String "alipay_account")   = pure AlipayAccountTransfer
+    parseJSON _                           = mzero
 
 ------------------------------------------------------------------------------
 -- | `Transfer` Object
@@ -1220,7 +1221,6 @@ data Transfer = Transfer {
      , transferLiveMode             :: Bool
      , transferAmount               :: Int
      , transferCurrency             :: Currency
-     , transferStatus               :: TransferStatus
      , transferType                 :: TransferType
      , transferBalanceTransaction   :: Expandable TransactionId
      , transferDescription          :: Maybe Description
@@ -1242,8 +1242,7 @@ instance FromJSON Transfer where
                     <*> o .: "livemode"
                     <*> o .: "amount"
                     <*> o .: "currency"
-                    <*> o .: "status"
-                    <*> o .: "type"
+                    <*> o .: "source_type"
                     <*> o .: "balance_transaction"
                     <*> o .:? "description"
                     <*> o .:? "bank_account"
@@ -1459,23 +1458,22 @@ instance FromJSON AccountId where
 ------------------------------------------------------------------------------
 -- | `Account` Object
 data Account = Account {
-       accountId                   :: AccountId
-     , accountEmail                :: Email
-     , accountStatementDescriptor  :: Maybe StatementDescriptor
-     , accountDisplayName          :: Maybe Text
-     , accountTimeZone             :: Text
-     , accountDetailsSubmitted     :: Bool
-     , accountChargesEnabled       :: Bool
-     , accountTransfersEnabled     :: Bool
-     , accountCurrenciesSupported  :: [Currency]
-     , accountDefaultCurrency      :: Currency
-     , accountCountry              :: Text
-     , accountObject               :: Text
-     , accountBusinessName         :: Maybe Text
-     , accountBusinessURL          :: Maybe Text
-     , accountBusinessLogo         :: Maybe Text
-     , accountSupportPhone         :: Maybe Text
-} deriving (Read, Show, Eq, Ord, Data, Typeable)
+      accountId                   :: AccountId
+    , accountEmail                :: Email
+    , accountStatementDescriptor  :: Maybe StatementDescriptor
+    , accountDisplayName          :: Maybe Text
+    , accountTimeZone             :: Text
+    , accountDetailsSubmitted     :: Bool
+    , accountChargesEnabled       :: Bool
+    , accountDefaultCurrency      :: Currency
+    , accountCountry              :: Text
+    , accountObject               :: Text
+    , accountBusinessName         :: Maybe Text
+    , accountBusinessURL          :: Maybe Text
+    , accountBusinessLogo         :: Maybe Text
+    , accountSupportEmail         :: Maybe Text
+    , accountSupportPhone         :: Maybe Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Account`
@@ -1483,19 +1481,18 @@ instance FromJSON Account where
    parseJSON (Object o) =
        Account <$> (AccountId <$> o .:  "id")
                <*> (Email <$> o .:  "email")
-               <*> o .:? "statement_descriptor"
-               <*> o .:  "display_name"
-               <*> o .:  "timezone"
-               <*> o .:  "details_submitted"
-               <*> o .:  "charges_enabled"
-               <*> o .:  "transfers_enabled"
-               <*> o .:  "currencies_supported"
-               <*> o .:  "default_currency"
-               <*> o .:  "country"
-               <*> o .:  "object"
+               <*> o .:?  "statement_descriptor"
+               <*> o .:   "display_name"
+               <*> o .:   "timezone"
+               <*> o .:   "details_submitted"
+               <*> o .:   "charges_enabled"
+               <*> o .:   "default_currency"
+               <*> o .:   "country"
+               <*> o .:   "object"
                <*> o .:?  "business_name"
                <*> o .:?  "business_url"
                <*> o .:?  "business_logo"
+               <*> o .:?  "support_email"
                <*> o .:?  "support_phone"
    parseJSON _ = mzero
 
@@ -1603,10 +1600,163 @@ instance FromJSON FeeDetails where
    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
--- | `Source` used for filtering `Balance` transactions. It should contain
+-- | `BalanceSource` used for filtering `Balance` transactions. It should contain
 -- an object Id such as a `ChargeId`
-newtype Source a = Source { getSource :: a }
+newtype BalanceSource a = BalanceSource { getSource :: a }
     deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | `Source` object
+data Source = Source {
+      sourceId                  :: SourceId
+    , sourceAmount              :: Maybe Int
+    , sourceClientSecret        :: Text
+    , sourceCodeVerification    :: SourceCodeVerification
+    , sourceCreated             :: UTCTime
+    , sourceCurrency            :: Currency
+    , sourceFlow                :: SourceFlow
+    , sourceLiveMode            :: Bool
+    , sourceMetaData            :: MetaData
+--    , sourceOwner               :: SourceOwner
+    , sourceReceiver            :: Maybe SourceReceiver
+    , sourceRedirect            :: Maybe SourceRedirect
+    , sourceStatementDescriptor :: Maybe Text
+    , sourceStatus              :: SourceStatus
+    , sourceType                :: SourceType
+    , sourceUsage               :: SourceUsage
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | Id for a `Source` object
+newtype SourceId = SourceId Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `SourceId`
+instance FromJSON SourceId where
+    parseJSON (String x)   = pure (SourceId x)
+    parseJSON _            = mzero
+
+------------------------------------------------------------------------------
+-- | type for a `Source` object
+data SourceType
+  = SourceCard
+  | SourceThreeDSecure
+  | SourceGiropay
+  | SourceSepaDebit
+  | SourceIdeal
+  | SourceSofort
+  | SourceBancontact
+  | SourceAlipay
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `SourceType`
+instance FromJSON SourceType where
+    parseJSON (String "card") = pure SourceCard
+    parseJSON (String "three_d_secure") = pure SourceThreeDSecure
+    parseJSON (String "giropay") = pure SourceGiropay
+    parseJSON (String "sepa_debit") = pure SourceSepaDebit
+    parseJSON (String "ideal") = pure SourceIdeal
+    parseJSON (String "sofort") = pure SourceSofort
+    parseJSON (String "bancontact") = pure SourceBancontact
+    parseJSON (String "alipay") = pure SourceAlipay
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | receiver for a `Source` object
+data SourceReceiver = SourceReceiver {
+      sourceReceiverAddress        :: Text
+    , sourceReceiverAmountCharged  :: Int
+    , sourceReceiverAmountReceived :: Int
+    , sourceReceiverAmountReturned :: Int
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `SourceReceiver`
+instance FromJSON SourceReceiver where
+    parseJSON (Object o) =
+        SourceReceiver <$> o .: "address"
+                       <*> o .: "amount_charged"
+                       <*> o .: "amount_received"
+                       <*> o .: "amount_returned"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | flow for a `Source` object
+data SourceFlow
+  = SourceFlowRedirect
+  | SourceFlowReceiver
+  | SourceFlowCodeVerification
+  | SourceFlowNone
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `SourceFlow`
+instance FromJSON SourceFlow where
+    parseJSON (String "redirect") = pure SourceFlowRedirect
+    parseJSON (String "receiver") = pure SourceFlowReceiver
+    parseJSON (String "code_verification") = pure SourceFlowCodeVerification
+    parseJSON (String "none") = pure SourceFlowNone
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | code_verification object for a `Source` object
+data SourceCodeVerification = SourceCodeVerification {
+      sourceCodeVerificationAttemptsRemaining :: Int
+    , sourceCodeVerificationStatus :: Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SourceCodeVerification`
+instance FromJSON SourceCodeVerification where
+    parseJSON (Object o) =
+        SourceCodeVerification <$> o .: "attempts_remaining"
+                               <*> o .: "status"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | redirect for a `Source` object
+data SourceRedirect = SourceRedirect {
+      sourceRedirectReturnURL :: Text
+    , sourceRedirectStatus    :: Text
+    , sourceRedirectURL       :: Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SourceRedirect`
+instance FromJSON SourceRedirect where
+    parseJSON (Object o) =
+        SourceRedirect <$> o .: "return_url"
+                       <*> o .: "status"
+                       <*> o .: "url"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | status of a `Source` object
+data SourceStatus
+  = SourceCanceled
+  | SourceChargeable
+  | SourceConsumed
+  | SourceFailed
+  | SourcePending
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `SourceStatus`
+instance FromJSON SourceStatus where
+    parseJSON (String "canceled") = pure SourceCanceled
+    parseJSON (String "chargeable") = pure SourceChargeable
+    parseJSON (String "consumed") = pure SourceConsumed
+    parseJSON (String "failed") = pure SourceFailed
+    parseJSON (String "pending") = pure SourcePending
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | whether a `Source` object is single use or reusable
+data SourceUsage
+  = SourceSingleUse
+  | SourceReusable
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `SourceUsage`
+instance FromJSON SourceUsage where
+    parseJSON (String "single_use") = pure SourceSingleUse
+    parseJSON (String "reusable") = pure SourceReusable
+    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | transaction type for `BalanceTransaction`

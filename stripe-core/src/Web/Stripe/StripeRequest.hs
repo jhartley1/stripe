@@ -69,13 +69,12 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      RefundId(..),
                                      RefundApplicationFee(..), RefundReason(..),
                                      RoutingNumber(..), StartingAfter(..),
-                                     StatementDescriptor(..), Source(..),
+                                     StatementDescriptor(..), BalanceSource(..),
                                      SubscriptionId(..),
                                      TaxPercent(..), TimeRange(..),
                                      TokenId(..), TransactionId(..),
                                      TransactionType(..), TransferId(..),
-                                     TransferStatus(..), TrialEnd(..),
-                                     TrialPeriodDays(..))
+                                     TrialEnd(..), TrialPeriodDays(..))
 import           Web.Stripe.Util    (toBytestring, toExpandable,toMetaData,
                                      toSeconds, getParams, toText)
 
@@ -387,8 +386,8 @@ instance ToStripeParam ReceiptEmail where
   toStripeParam (ReceiptEmail txt) =
     (("receipt_email", Text.encodeUtf8 txt) :)
 
-instance ToStripeParam a => ToStripeParam (Source a) where
-  toStripeParam (Source param) =
+instance ToStripeParam a => ToStripeParam (BalanceSource a) where
+  toStripeParam (BalanceSource param) =
     case toStripeParam param [] of
       [(_, p)] -> (("source", p) :)
       _        -> error "source applied to non-singleton"
@@ -439,10 +438,6 @@ instance ToStripeParam TransactionId where
 instance ToStripeParam TransferId where
   toStripeParam (TransferId tid) =
     (("transfer", Text.encodeUtf8 tid) :)
-
-instance ToStripeParam TransferStatus where
-  toStripeParam transferStatus =
-    (("status", toBytestring transferStatus) :)
 
 instance ToStripeParam TrialPeriodDays where
   toStripeParam (TrialPeriodDays days) =

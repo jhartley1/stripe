@@ -43,7 +43,7 @@ module Web.Stripe.Balance
     , EndingBefore           (..)
     , ExpandParams           (..)
     , Limit                  (..)
-    , Source                 (..)
+    , BalanceSource          (..)
     , StartingAfter          (..)
     , StripeList             (..)
     , TimeRange              (..)
@@ -60,7 +60,7 @@ import           Web.Stripe.Types         (AvailableOn(..), Balance (..),
                                            BalanceAmount(..), BalanceTransaction(..),
                                            Created(..), Currency(..),
                                            EndingBefore(..), ExpandParams(..),
-                                           Limit(..), Source(..), StartingAfter(..),
+                                           Limit(..), BalanceSource(..), StartingAfter(..),
                                            StripeList (..), TimeRange(..),
                                            TransferId(..), TransactionId (..),
                                            TransactionType(..))
@@ -112,6 +112,6 @@ instance StripeHasParam GetBalanceTransactionHistory Currency
 instance StripeHasParam GetBalanceTransactionHistory (EndingBefore TransactionId)
 instance StripeHasParam GetBalanceTransactionHistory Limit
 instance StripeHasParam GetBalanceTransactionHistory (StartingAfter TransactionId)
-instance (ToStripeParam a) => StripeHasParam GetBalanceTransactionHistory (Source a)
+instance (ToStripeParam a) => StripeHasParam GetBalanceTransactionHistory (BalanceSource a)
 instance StripeHasParam GetBalanceTransactionHistory TransferId
 instance StripeHasParam GetBalanceTransactionHistory TransactionType
