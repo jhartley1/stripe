@@ -45,6 +45,7 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      ApplicationFeePercent(..),
                                      AtPeriodEnd(..),
                                      AvailableOn(..), BankAccountId(..),
+                                     BankAccountHolderType(..),
                                      CardId(..), CardNumber(..),
                                      Capture(..), ChargeId(..), Closed(..),
                                      CouponId(..),
@@ -329,9 +330,16 @@ instance ToStripeParam Name where
 instance ToStripeParam NewBankAccount where
   toStripeParam NewBankAccount{..} =
     ((getParams
-        [ ("bank_account[country]", Just $ (\(Country x) -> x) newBankAccountCountry)
-        , ("bank_account[routing_number]", Just $ (\(RoutingNumber x) -> x) newBankAccountRoutingNumber)
-        , ("bank_account[account_number]", Just $ (\(AccountNumber x) -> x) newBankAccountAccountNumber)
+        [ ("bank_account[account_number]", Just $ (\(AccountNumber x) -> x) newBankAccountAccountNumber)
+        , ("bank_account[country]", Just $ (\(Country x) -> x) newBankAccountCountry)
+        , ("bank_account[currency]", Just $ toText newBankAccountCurrency)
+        , ("bank_account[routing_number]", (\(RoutingNumber x) -> x) <$> newBankAccountRoutingNumber)
+        , ("bank_account[account_holder_name]", newBankAccountHolderName)
+        , ("bank_account[account_holder_type]",
+           case newBankAccountHolderType of
+             Just BankAccountHolderIndividual -> Just "individual"
+             Just BankAccountHolderCompany -> Just "company"
+             Nothing -> Nothing )
         ]) ++)
 
 instance ToStripeParam NewCard where

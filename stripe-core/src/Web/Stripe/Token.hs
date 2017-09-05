@@ -47,6 +47,7 @@ module Web.Stripe.Token
    , Card           (..)
    , CardNumber     (..)
    , Country        (..)
+   , Currency       (..)
    , CustomerId     (..)
    , CVC            (..)
    , ExpMonth       (..)
@@ -67,7 +68,7 @@ import           Web.Stripe.StripeRequest (Method (GET, POST),
 import           Web.Stripe.Util          ((</>))
 import           Web.Stripe.Types         (Account(..), AccountNumber (..),
                                            CVC (..), CardNumber (..), CustomerId(..),
-                                           Country (..), ExpMonth (..),
+                                           Country (..), Currency(..), ExpMonth (..),
                                            BankAccount(..), ExpYear (..),
                                            NewBankAccount(..), mkNewCard,
                                            NewCard(..), RoutingNumber (..),

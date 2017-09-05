@@ -35,6 +35,9 @@ tokenTests stripe = do
     cvc = CVC "123"
     cardinfo = (mkNewCard cn em ey) { newCardCVC = Just cvc }
     bankinfo = NewBankAccount
-                  (Country "US")
-                  (RoutingNumber "110000000")
                   (AccountNumber "000123456789")
+                  (Country "US")
+                  USD
+                  (Just (RoutingNumber "110000000"))
+                  Nothing
+                  Nothing

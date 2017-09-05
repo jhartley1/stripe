@@ -1351,9 +1351,12 @@ newtype AccountNumber =
 ------------------------------------------------------------------------------
 -- | create a new `BankAccount`
 data NewBankAccount = NewBankAccount
-    { newBankAccountCountry       :: Country
-    , newBankAccountRoutingNumber :: RoutingNumber
-    , newBankAccountAccountNumber :: AccountNumber
+    { newBankAccountAccountNumber :: AccountNumber
+    , newBankAccountCountry       :: Country
+    , newBankAccountCurrency      :: Currency
+    , newBankAccountRoutingNumber :: Maybe RoutingNumber
+    , newBankAccountHolderName    :: Maybe Text
+    , newBankAccountHolderType    :: Maybe BankAccountHolderType
     }
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 

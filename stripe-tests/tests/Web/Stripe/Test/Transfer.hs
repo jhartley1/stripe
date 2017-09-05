@@ -22,8 +22,7 @@ transferTests stripe =
       result `shouldSatisfy` isRight
     it "Retrieves transfers expandable" $ do
       result <- stripe $ do t <- getTransfers -&- ExpandParams
-                                   [ "data.recipient"
-                                   , "data.balance_transaction"
+                                   [ "data.balance_transaction"
                                    ]
                             return t
       result `shouldSatisfy` isRight
