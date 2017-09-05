@@ -1652,6 +1652,25 @@ data Source = Source {
     , sourceUsage               :: SourceUsage
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
+-- | JSON instance for `Source`
+instance FromJSON Source where
+    parseJSON (Object o) =
+        Source <$> o .: "id"
+               <*> o .:? "amount"
+               <*> o .: "client_secret"
+               <*> o .: "code_verification"
+               <*> fmap fromSeconds (o .: "created")
+               <*> o .: "currency"
+               <*> o .: "flow"
+               <*> o .: "livemode"
+               <*> o .: "metadata"
+               <*> o .:? "receiver"
+               <*> o .:? "redirect"
+               <*> o .:? "statement_descriptor"
+               <*> o .: "status"
+               <*> o .: "type"
+               <*> o .: "usage"
+
 ------------------------------------------------------------------------------
 -- | Id for a `Source` object
 newtype SourceId = SourceId Text
@@ -1826,6 +1845,10 @@ data EventType =
   | ApplicationFeeCreatedEvent
   | ApplicationFeeRefundedEvent
   | BalanceAvailableEvent
+  | BitcoinReceiverCreatedEvent
+  | BitcoinReceiverFilledEvent
+  | BitcoinReceiverUpdatedEvent
+  | BitcoinReceiverTransactionCreatedEvent
   | ChargeSucceededEvent
   | ChargeFailedEvent
   | ChargeRefundedEvent
@@ -1853,6 +1876,7 @@ data EventType =
   | InvoiceUpdatedEvent
   | InvoicePaymentSucceededEvent
   | InvoicePaymentFailedEvent
+  | InvoiceUpcomingEvent
   | InvoiceItemCreatedEvent
   | InvoiceItemUpdatedEvent
   | InvoiceItemDeletedEvent
@@ -1862,11 +1886,23 @@ data EventType =
   | CouponCreatedEvent
   | CouponUpdatedEvent
   | CouponDeletedEvent
+  | OrderCreatedEvent
+  | OrderPaymentFailedEvent
+  | OrderPaymentSucceededEvent
+  | OrderUpdatedEvent
+  | OrderReturnCreatedEvent
+  | ReviewClosedEvent
+  | ReviewOpenedEvent
+  | SkuCreatedEvent
+  | SkuDeletedEvent
+  | SkuUpdatedEvent
+  | SourceCanceledEvent
+  | SourceChargeableEvent
+  | SourceFailedEvent
+  | SourceTransactionCreatedEvent
   | TransferCreatedEvent
   | TransferUpdatedEvent
   | TransferReversedEvent
-  | TransferPaidEvent
-  | TransferFailedEvent
   | PingEvent
   | UnknownEvent
   deriving (Read, Show, Eq, Ord, Data, Typeable)
@@ -1879,6 +1915,10 @@ instance FromJSON EventType where
    parseJSON (String "application_fee.created") = pure ApplicationFeeCreatedEvent
    parseJSON (String "application_fee.refunded") = pure ApplicationFeeRefundedEvent
    parseJSON (String "balance.available") = pure BalanceAvailableEvent
+   parseJSON (String "bitcoin.receiver.created") = pure BitcoinReceiverCreatedEvent
+   parseJSON (String "bitcoin.receiver.filled") = pure BitcoinReceiverFilledEvent
+   parseJSON (String "bitcoin.receiver.updated") = pure BitcoinReceiverUpdatedEvent
+   parseJSON (String "bitcoin.receiver.transaction.created") = pure BitcoinReceiverTransactionCreatedEvent
    parseJSON (String "charge.succeeded") = pure ChargeSucceededEvent
    parseJSON (String "chage.failed") = pure ChargeFailedEvent
    parseJSON (String "charge.refunded") = pure ChargeRefundedEvent
@@ -1905,6 +1945,7 @@ instance FromJSON EventType where
    parseJSON (String "invoice.updated") = pure InvoiceUpdatedEvent
    parseJSON (String "invoice.payment_succeeded") = pure InvoicePaymentSucceededEvent
    parseJSON (String "invoice.payment_failed") = pure InvoicePaymentFailedEvent
+   parseJSON (String "invoice.upcoming") = pure InvoiceUpcomingEvent
    parseJSON (String "invoiceitem.created") = pure InvoiceItemCreatedEvent
    parseJSON (String "invoiceitem.updated") = pure InvoiceItemUpdatedEvent
    parseJSON (String "invoiceitem.deleted") = pure InvoiceItemDeletedEvent
@@ -1914,11 +1955,23 @@ instance FromJSON EventType where
    parseJSON (String "coupon.created") = pure CouponCreatedEvent
    parseJSON (String "coupon.updated") = pure CouponUpdatedEvent
    parseJSON (String "coupon.deleted") = pure CouponDeletedEvent
+   parseJSON (String "order.created") = pure OrderCreatedEvent
+   parseJSON (String "order.payment_failed") = pure OrderPaymentFailedEvent
+   parseJSON (String "order.payment_succeeded") = pure OrderPaymentSucceededEvent
+   parseJSON (String "order.updated") = pure OrderUpdatedEvent
+   parseJSON (String "order_return.created") = pure OrderReturnCreatedEvent
+   parseJSON (String "review.closed") = pure ReviewClosedEvent
+   parseJSON (String "review.opened") = pure ReviewOpenedEvent
+   parseJSON (String "sku.created") = pure SkuCreatedEvent
+   parseJSON (String "sku.deleted") = pure SkuDeletedEvent
+   parseJSON (String "sku.updated") = pure SkuUpdatedEvent
+   parseJSON (String "source.canceled") = pure SourceCanceledEvent
+   parseJSON (String "source.chargeable") = pure SourceChargeableEvent
+   parseJSON (String "source.failed") = pure SourceFailedEvent
+   parseJSON (String "source.transaction.created") = pure SourceTransactionCreatedEvent
    parseJSON (String "transfer.created") = pure TransferCreatedEvent
    parseJSON (String "transfer.updated") = pure TransferUpdatedEvent
    parseJSON (String "transfer.reversed") = pure TransferReversedEvent
-   parseJSON (String "transfer.paid") = pure TransferPaidEvent
-   parseJSON (String "transfer.failed") = pure TransferFailedEvent
    parseJSON (String "ping") = pure PingEvent
    parseJSON _ = pure UnknownEvent
 
@@ -1937,11 +1990,13 @@ data EventData =
   | PlanEvent Plan
   | CouponEvent Coupon
   | BalanceEvent Balance
+  | BitcoinReceiverEvent BitcoinReceiver
   | ChargeEvent Charge
   | DisputeEvent Dispute
   | CustomerEvent Customer
   | CardEvent Card
   | SubscriptionEvent Subscription
+  | SourceEvent Source
   | DiscountEvent Discount
   | InvoiceItemEvent InvoiceItem
   | UnknownEventData
@@ -1978,6 +2033,9 @@ instance FromJSON Event where
         "application_fee.created" -> ApplicationFeeEvent <$> obj .: "object"
         "application_fee.refunded" -> ApplicationFeeEvent <$> obj .: "object"
         "balance.available" -> BalanceEvent <$> obj .: "object"
+        "bitcoin.receiver.created" -> BitcoinReceiverEvent <$> obj .: "object"
+        "bitcoin.receiver.filled" -> BitcoinReceiverEvent <$> obj .: "object"
+        "bitcoin.receiver.updated" -> BitcoinReceiverEvent <$> obj .: "object"
         "charge.succeeded" -> ChargeEvent <$> obj .: "object"
         "charge.failed" -> ChargeEvent <$> obj .: "object"
         "charge.refunded" -> ChargeEvent <$> obj .: "object"
@@ -2014,11 +2072,12 @@ instance FromJSON Event where
         "coupon.created" -> CouponEvent <$> obj .: "object"
         "coupon.updated" -> CouponEvent <$> obj .: "object"
         "coupon.deleted" -> CouponEvent <$> obj .: "object"
+        "source.canceled" -> SourceEvent <$> obj .: "object"
+        "source.chargeable" -> SourceEvent <$> obj .: "object"
+        "source.failed" -> SourceEvent <$> obj .: "object"
         "transfer.created" -> TransferEvent <$> obj .: "object"
         "transfer.updated" -> TransferEvent <$> obj .: "object"
         "transfer.reversed" -> TransferEvent <$> obj .: "object"
-        "transfer.paid" -> TransferEvent <$> obj .: "object"
-        "transfer.failed" -> TransferEvent <$> obj .: "object"
         "ping" -> pure Ping
         _        -> pure UnknownEventData
      eventObject <- o .: "object"
@@ -2526,10 +2585,10 @@ data BitcoinReceiver = BitcoinReceiver {
     ,  btcTransactions          :: Maybe Transactions
     ,  btcPayment               :: Maybe PaymentId
     ,  btcCustomer              :: Maybe CustomerId
-    } deriving (Show, Eq)
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
--- | FromJSON for BitcoinReceiverId
+-- | FromJSON for `BitcoinReceiver`
 instance FromJSON BitcoinReceiver where
    parseJSON (Object o) =
      BitcoinReceiver <$> (BitcoinReceiverId <$> o .: "id")
@@ -2563,7 +2622,7 @@ data Transactions = Transactions {
     , transactionsHasMore    :: Bool
     , transactionsURL        :: Text
     , transactions           :: [BitcoinTransaction]
-    } deriving (Show, Eq)
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | Bitcoin Transactions data
@@ -2586,7 +2645,7 @@ data BitcoinTransaction = BitcoinTransaction {
        , btcTransactionBitcoinAmount :: Integer
        , btcTransactionCurrency      :: Currency
        , btcTransactionReceiver      :: BitcoinReceiverId
-      } deriving (Show, Eq)
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | FromJSON BitcoinTransaction
@@ -2605,7 +2664,7 @@ instance FromJSON BitcoinTransaction where
 -- | BitcoinTransactionId
 newtype BitcoinTransactionId =
     BitcoinTransactionId Text
-      deriving (Show, Eq)
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | FromJSON BitcoinTransactionId
@@ -2616,7 +2675,7 @@ instance FromJSON BitcoinTransactionId where
 ------------------------------------------------------------------------------
 -- | BTC ReceiverId
 newtype BitcoinReceiverId = BitcoinReceiverId Text
-    deriving (Show, Eq)
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | FromJSON for BitcoinReceiverId
@@ -2627,7 +2686,7 @@ instance FromJSON BitcoinReceiverId where
 ------------------------------------------------------------------------------
 -- | BTC PaymentId
 newtype PaymentId = PaymentId Text
-    deriving (Show, Eq)
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | FromJSON for PaymentId
