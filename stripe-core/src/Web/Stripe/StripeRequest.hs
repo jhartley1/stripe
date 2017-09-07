@@ -48,7 +48,7 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      BankAccountHolderType(..),
                                      CardId(..), CardNumber(..),
                                      Capture(..), ChargeId(..), Closed(..),
-                                     CouponId(..),
+                                     CouponId(..), Caption(..),
                                      Country(..), Created(..), Currency(..),
                                      CustomerId(..), CVC(..), Date(..),
                                      DefaultCard(..), Description(..),
@@ -62,7 +62,10 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      InvoiceId(..), InvoiceItemId(..),
                                      InvoiceLineItemId(..),
                                      MetaData(..), PlanId(..),
-                                     PlanName(..), Prorate(..), Limit(..),
+                                     PlanName(..), ProductId(..), ProductName(..),
+                                     ProductURL(..), ProductAttributes(..),
+                                     Shippable(..), ProductActive(..),
+                                     Prorate(..), Limit(..),
                                      MaxRedemptions(..), Name(..),
                                      NewBankAccount(..), NewCard(..),
                                      PercentOff(..), Quantity(..), ReceiptEmail(..),
@@ -373,6 +376,35 @@ instance ToStripeParam PlanId where
 instance ToStripeParam PlanName where
   toStripeParam (PlanName txt) =
     (("name", Text.encodeUtf8 txt) :)
+
+instance ToStripeParam ProductId where
+  toStripeParam (ProductId pid) =
+    (("id", Text.encodeUtf8 pid) :)
+
+instance ToStripeParam ProductName where
+  toStripeParam (ProductName pid) =
+    (("name", Text.encodeUtf8 pid) :)
+
+instance ToStripeParam Caption where
+  toStripeParam (Caption cap) =
+    (("caption", Text.encodeUtf8 cap) :)
+
+instance ToStripeParam ProductURL where
+  toStripeParam (ProductURL url) =
+    (("url", Text.encodeUtf8 url) :)
+
+instance ToStripeParam ProductAttributes where
+  toStripeParam (ProductAttributes attrs) =
+    ((fmap (\attr -> ("attributes[]", Text.encodeUtf8 attr)) attrs)
+     ++)
+
+instance ToStripeParam ProductActive where
+  toStripeParam (ProductActive a) =
+    (("active", if a then "true" else "false") :)
+
+instance ToStripeParam Shippable where
+  toStripeParam (Shippable s) =
+    (("shippable", if s then "true" else "false") :)
 
 instance ToStripeParam Prorate where
   toStripeParam (Prorate p) =

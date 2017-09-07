@@ -992,7 +992,7 @@ data DisputeStatus
 instance FromJSON DisputeReason where
    parseJSON (String "duplicate") = pure Duplicate
    parseJSON (String "fraudulent") = pure Fraudulent
-   parseJSON (String "subscription_canceled") = pure SubscriptionCanceled
+   parseJSON (String "subscrption_canceled") = pure SubscriptionCanceled
    parseJSON (String "product_unacceptable") = pure ProductUnacceptable
    parseJSON (String "product_not_received") = pure ProductNotReceived
    parseJSON (String "credit_not_processed") = pure CreditNotProcessed
@@ -1675,6 +1675,7 @@ instance FromJSON Source where
                <*> o .: "status"
                <*> o .: "type"
                <*> o .: "usage"
+    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for a `Source` object
@@ -1844,6 +1845,7 @@ instance FromJSON Order where
               <*> o .:  "livemode"
               <*> o .:  "metadata"
               <*> fmap fromSeconds (o .: "updated")
+    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for an `Order` object
@@ -1873,6 +1875,7 @@ instance FromJSON OrderItem where
                   <*> o .:  "description"
                   <*> o .:? "quantity"
                   <*> o .:  "type"
+    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | type for a `Review`
@@ -1962,25 +1965,60 @@ newtype PayoutId = PayoutId Text
 
 -- | JSON instance for a `PayoutId`
 instance FromJSON PayoutId where
-    parseJSON (String x) = pure $ PayoutId x
-    parseJSON _          = mzero
+    parseJSON = fmap PayoutId . parseJSON
+
+------------------------------------------------------------------------------
+-- | `Caption` type
+newtype Caption = Caption Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `Caption`
+instance FromJSON Caption where
+    parseJSON = fmap Caption . parseJSON
+
+------------------------------------------------------------------------------
+-- | Whether a `Product` is active
+newtype ProductActive = ProductActive Bool
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for an `Active`
+instance FromJSON ProductActive where
+    parseJSON = fmap ProductActive . parseJSON
+
+------------------------------------------------------------------------------
+-- | URL for a `Product`
+newtype ProductURL = ProductURL Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `ProductUrl`
+instance FromJSON ProductURL where
+    parseJSON = fmap ProductURL . parseJSON
+
+------------------------------------------------------------------------------
+-- | Attributes for a `Product`
+newtype ProductAttributes = ProductAttributes [Text]
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `ProductAttributes`
+instance FromJSON ProductAttributes where
+    parseJSON = fmap ProductAttributes . parseJSON
 
 ------------------------------------------------------------------------------
 -- | type for a `Product`
 data Product = Product {
       productId :: ProductId
-    , productActive :: Bool
-    , productAttributes :: [Text]
+    , productActive :: ProductActive
+    , productAttributes :: ProductAttributes
     , productCaption :: Maybe Text
     , productCreated :: UTCTime
-    , productDescription :: Text
+    , productDescription :: Description
     , productImages :: [Text]
     , productLiveMode :: Bool
     , productMetaData :: MetaData
-    , productName :: Text
-    , productShippable :: Bool
+    , productName :: ProductName
+    , productShippable :: Shippable
     , productUpdated :: UTCTime
-    , productUrl :: Text
+    , productURL :: Maybe ProductURL
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 -- | JSON instance for a `Product`
@@ -1998,7 +2036,7 @@ instance FromJSON Product where
                 <*> o .: "name"
                 <*> o .: "shippable"
                 <*> fmap fromSeconds (o .: "updated")
-                <*> o .: "url"
+                <*> o .:? "url"
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
@@ -2008,8 +2046,25 @@ newtype ProductId = ProductId Text
 
 -- | JSON instance for a `ProductId`
 instance FromJSON ProductId where
-    parseJSON (String x) = pure $ ProductId x
-    parseJSON _          = mzero
+    parseJSON = fmap ProductId . parseJSON
+
+------------------------------------------------------------------------------
+-- | Name for a `Product`
+newtype ProductName = ProductName Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `ProductName`
+instance FromJSON ProductName where
+    parseJSON = fmap ProductName . parseJSON
+
+------------------------------------------------------------------------------
+-- | Whether a `Product` is Shippable
+newtype Shippable = Shippable Bool
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `Shippable`
+instance FromJSON Shippable where
+    parseJSON = fmap Shippable . parseJSON
 
 ------------------------------------------------------------------------------
 -- | type for a `Sku`
@@ -2050,8 +2105,7 @@ newtype SkuId = SkuId Text
 
 -- | JSON instance for a `SkuId`
 instance FromJSON SkuId where
-    parseJSON (String x) = pure $ SkuId x
-    parseJSON _          = mzero
+    parseJSON = fmap SkuId . parseJSON
 
 ------------------------------------------------------------------------------
 -- | Attributes for a `Sku`
