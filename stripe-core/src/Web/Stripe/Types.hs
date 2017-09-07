@@ -1928,6 +1928,44 @@ instance FromJSON ReviewReason where
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
+-- | type for a `Payout`
+data Payout = Payout {
+      payoutId :: PayoutId
+    , payoutAmount :: Int
+    , payoutArrivalDate :: UTCTime
+    , payoutCreated :: UTCTime
+    , payoutCurrency :: Currency
+    , payoutDescripiton :: Text
+    , payoutFailureMessage :: Maybe Text
+    , payoutLiveMode :: Bool
+    , payoutMetaData :: MetaData
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `Payout`
+instance FromJSON Payout where
+    parseJSON (Object o) =
+        Payout <$> o .: "id"
+               <*> o .: "amount"
+               <*> fmap fromSeconds (o .: "arrival_date")
+               <*> fmap fromSeconds (o .: "created")
+               <*> o .: "currency"
+               <*> o .: "description"
+               <*> o .:? "failure_message"
+               <*> o .: "livemode"
+               <*> o .: "metadata"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | Id for a `Payout`
+newtype PayoutId = PayoutId Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `PayoutId`
+instance FromJSON PayoutId where
+    parseJSON (String x) = pure $ PayoutId x
+    parseJSON _          = mzero
+
+------------------------------------------------------------------------------
 -- | transaction type for `BalanceTransaction`
 data TransactionType
   = ChargeTxn
@@ -1966,6 +2004,9 @@ instance ToJSON TransactionType where
 data EventType =
     AccountUpdatedEvent
   | AccountApplicationDeauthorizedEvent
+  | AccountExternalCreatedEvent
+  | AccountExternalDeletedEvent
+  | AccountExternalUpdatedEvent
   | ApplicationFeeCreatedEvent
   | ApplicationFeeRefundedEvent
   | BalanceAvailableEvent
@@ -1977,12 +2018,14 @@ data EventType =
   | ChargeFailedEvent
   | ChargeRefundedEvent
   | ChargeCapturedEvent
+  | ChargePendingEvent
   | ChargeUpdatedEvent
   | ChargeDisputeCreatedEvent
   | ChargeDisputeUpdatedEvent
   | ChargeDisputeClosedEvent
   | ChargeDisputeFundsWithdrawnEvent
   | ChargeDisputeFundsReinstatedEvent
+  | ChargeRefundUpdatedEvent
   | CustomerCreatedEvent
   | CustomerUpdatedEvent
   | CustomerDeletedEvent
@@ -2004,9 +2047,17 @@ data EventType =
   | InvoiceItemCreatedEvent
   | InvoiceItemUpdatedEvent
   | InvoiceItemDeletedEvent
+  | PayoutCanceledEvent
+  | PayoutCreatedEvent
+  | PayoutFailedEvent
+  | PayoutPaidEvent
+  | PayoutUpdatedEvent
   | PlanCreatedEvent
   | PlanUpdatedEvent
   | PlanDeletedEvent
+  | ProductCreatedEvent
+  | ProductDeletedEvent
+  | ProductUpdatedEvent
   | CouponCreatedEvent
   | CouponUpdatedEvent
   | CouponDeletedEvent
@@ -2036,6 +2087,9 @@ data EventType =
 instance FromJSON EventType where
    parseJSON (String "account.updated") = pure AccountUpdatedEvent
    parseJSON (String "account.application.deauthorized") = pure AccountApplicationDeauthorizedEvent
+   parseJSON (String "account.external_account.created") = pure AccountExternalCreatedEvent
+   parseJSON (String "account.external_account.deleted") = pure AccountExternalDeletedEvent
+   parseJSON (String "account.external_account.updated") = pure AccountExternalUpdatedEvent
    parseJSON (String "application_fee.created") = pure ApplicationFeeCreatedEvent
    parseJSON (String "application_fee.refunded") = pure ApplicationFeeRefundedEvent
    parseJSON (String "balance.available") = pure BalanceAvailableEvent
@@ -2048,11 +2102,13 @@ instance FromJSON EventType where
    parseJSON (String "charge.refunded") = pure ChargeRefundedEvent
    parseJSON (String "charge.captured") = pure ChargeCapturedEvent
    parseJSON (String "charge.updated") = pure ChargeUpdatedEvent
+   parseJSON (String "charge.pending") = pure ChargePendingEvent
    parseJSON (String "charge.dispute.created") = pure ChargeDisputeCreatedEvent
    parseJSON (String "charge.dispute.updated") = pure ChargeDisputeUpdatedEvent
    parseJSON (String "charge.dispute.closed") = pure ChargeDisputeClosedEvent
    parseJSON (String "charge.dispute.funds_withdrawn") = pure ChargeDisputeFundsWithdrawnEvent
    parseJSON (String "charge.dispute.funds_reinstated") = pure ChargeDisputeFundsReinstatedEvent
+   parseJSON (String "charge.refund.updated") = pure ChargeRefundUpdatedEvent
    parseJSON (String "customer.created") = pure CustomerCreatedEvent
    parseJSON (String "customer.updated") = pure CustomerUpdatedEvent
    parseJSON (String "customer.deleted") = pure CustomerDeletedEvent
@@ -2073,9 +2129,17 @@ instance FromJSON EventType where
    parseJSON (String "invoiceitem.created") = pure InvoiceItemCreatedEvent
    parseJSON (String "invoiceitem.updated") = pure InvoiceItemUpdatedEvent
    parseJSON (String "invoiceitem.deleted") = pure InvoiceItemDeletedEvent
+   parseJSON (String "payout.canceled") = pure PayoutCanceledEvent
+   parseJSON (String "payout.created") = pure PayoutCreatedEvent
+   parseJSON (String "payout.failed") = pure PayoutFailedEvent
+   parseJSON (String "payout.paid") = pure PayoutPaidEvent
+   parseJSON (String "payout.updated") = pure PayoutUpdatedEvent
    parseJSON (String "plan.created") = pure PlanCreatedEvent
    parseJSON (String "plan.updated") = pure PlanUpdatedEvent
    parseJSON (String "plan.deleted") = pure PlanDeletedEvent
+   parseJSON (String "product.created") = pure ProductCreatedEvent
+   parseJSON (String "product.deleted") = pure ProductDeletedEvent
+   parseJSON (String "product.updated") = pure ProductUpdatedEvent
    parseJSON (String "coupon.created") = pure CouponCreatedEvent
    parseJSON (String "coupon.updated") = pure CouponUpdatedEvent
    parseJSON (String "coupon.deleted") = pure CouponDeletedEvent
@@ -2111,11 +2175,13 @@ data EventData =
   | AccountApplicationEvent ConnectApp
   | ApplicationFeeEvent ApplicationFee
   | InvoiceEvent Invoice
+  | PayoutEvent Payout
   | PlanEvent Plan
   | CouponEvent Coupon
   | BalanceEvent Balance
   | BitcoinReceiverEvent BitcoinReceiver
   | ChargeEvent Charge
+  | RefundEvent Refund
   | DisputeEvent Dispute
   | CustomerEvent Customer
   | CardEvent Card
@@ -2167,11 +2233,13 @@ instance FromJSON Event where
         "charge.refunded" -> ChargeEvent <$> obj .: "object"
         "charge.captured" -> ChargeEvent <$> obj .: "object"
         "charge.updated" -> ChargeEvent <$> obj .: "object"
+        "charge.pending" -> ChargeEvent <$> obj .: "object"
         "charge.dispute.created" -> DisputeEvent <$> obj .: "object"
         "charge.dispute.updated" -> DisputeEvent <$> obj .: "object"
         "charge.dispute.closed" -> DisputeEvent <$> obj .: "object"
         "charge.dispute.funds_withdrawn" -> DisputeEvent <$> obj .: "object"
         "charge.dispute.funds_reinstated" -> DisputeEvent <$> obj .: "object"
+        "charge.refund.updated" -> RefundEvent <$> obj .: "object"
         "customer.created" -> CustomerEvent <$> obj .: "object"
         "customer.updated" -> CustomerEvent <$> obj .: "object"
         "customer.deleted" -> CustomerEvent <$> obj .: "object"
@@ -2197,11 +2265,16 @@ instance FromJSON Event where
         "order.payment_failed" -> OrderEvent <$> obj .: "object"
         "order.payment_succeeded" -> OrderEvent <$> obj .: "object"
         "order.updated" -> OrderEvent <$> obj .: "object"
+        "payout.canceled" -> PayoutEvent <$> obj .: "object"
+        "payout.created" -> PayoutEvent <$> obj .: "object"
+        "payout.failed" -> PayoutEvent <$> obj .: "object"
+        "payout.paid" -> PayoutEvent <$> obj .: "object"
+        "payout.updated" -> PayoutEvent <$> obj .: "object"
         "plan.created" -> PlanEvent <$> obj .: "object"
         "plan.updated" -> PlanEvent <$> obj .: "object"
         "plan.deleted" -> PlanEvent <$> obj .: "object"
-        "review.opened" -> ReviewEvent <$> obj .: "review"
-        "review.closed" -> ReviewEvent <$> obj .: "review"
+        "review.opened" -> ReviewEvent <$> obj .: "object"
+        "review.closed" -> ReviewEvent <$> obj .: "object"
         "coupon.created" -> CouponEvent <$> obj .: "object"
         "coupon.updated" -> CouponEvent <$> obj .: "object"
         "coupon.deleted" -> CouponEvent <$> obj .: "object"
