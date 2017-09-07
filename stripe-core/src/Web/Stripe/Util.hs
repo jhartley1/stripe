@@ -16,6 +16,7 @@ module Web.Stripe.Util
     , toBytestring
     , (</>)
     , toMetaData
+    , toAttributes
     , toExpandable
     ) where
 
@@ -98,6 +99,13 @@ toMetaData :: [(Text, Text)] -> [(ByteString, ByteString)]
 toMetaData = map toKV
   where
     toKV (k,v) = ("metadata[" <> T.encodeUtf8 k <> "]",  T.encodeUtf8 v)
+
+------------------------------------------------------------------------------
+-- | To Attributes
+toAttributes :: [(Text, Text)] -> [(ByteString, ByteString)]
+toAttributes = map toKV
+  where
+    toKV (k,v) = ("attributes[" <> T.encodeUtf8 k <> "]",  T.encodeUtf8 v)
 
 ------------------------------------------------------------------------------
 -- | To Expandable

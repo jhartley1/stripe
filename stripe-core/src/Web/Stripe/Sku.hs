@@ -16,8 +16,20 @@ module Web.Stripe.Sku
     , DeleteSku
     , deleteSku
       -- * Types
-    , Sku     (..)
-    , SkuId   (..)
+    , StartingAfter      (..)
+    , EndingBefore       (..)
+    , Limit              (..)
+    , MetaData           (..)
+    , StripeList         (..)
+    , StripeDeleteResult (..)
+    , SkuActive          (..)
+    , Sku                (..)
+    , SkuId              (..)
+    , SkuPrice           (..)
+    , Currency           (..)
+    , ProductId          (..)
+    , SkuAttributes      (..)
+    , SkuImage           (..)
     ) where
 
 import           Data.Text                (Text)
@@ -25,15 +37,19 @@ import           Web.Stripe.StripeRequest (Method (GET, POST, DELETE), Param(..)
                                            StripeHasParam, StripeRequest(..),
                                            StripeReturn, ToStripeParam(..),
                                            mkStripeRequest)
-import           Web.Stripe.Types         (Sku(..), SkuId(..), Limit(..),
-                                           StartingAfter(..), EndingBefore(..))
+import           Web.Stripe.Types         (Sku(..), SkuId(..), SkuActive(..),
+                                           StartingAfter(..), EndingBefore(..),
+                                           Limit(..), MetaData(..), StripeList(..),
+                                           StripeDeleteResult(..), Currency(..),
+                                           SkuPrice(..), ProductId(..),
+                                           SkuAttributes(..), SkuImage(..))
 import           Web.Stripe.Util          ((</>))
 
 ------------------------------------------------------------------------------
 -- | Create a `Sku`
 createSku
     :: Currency
-    -> Price
+    -> SkuPrice
     -> ProductId
     -> StripeRequest CreateSku
 createSku
@@ -45,7 +61,7 @@ createSku
         url     = "skus"
         params  = toStripeParam currency $
                   toStripeParam price $
-                  toStripeParam (Param "product", productid) $
+                  toStripeParam (Param ("product" :: Text, productid)) $
                   []
 
 data CreateSku
@@ -85,7 +101,7 @@ instance StripeHasParam UpdateSku SkuActive
 instance StripeHasParam UpdateSku Currency
 instance StripeHasParam UpdateSku SkuImage
 instance StripeHasParam UpdateSku MetaData
-instance StripeHasParam UpdateSku Price
+instance StripeHasParam UpdateSku SkuPrice
 
 ------------------------------------------------------------------------------
 -- | Retrieve all `Sku`s

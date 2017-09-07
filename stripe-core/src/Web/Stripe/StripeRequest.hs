@@ -74,7 +74,9 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      RefundApplicationFee(..), RefundReason(..),
                                      RoutingNumber(..), StartingAfter(..),
                                      StatementDescriptor(..), BalanceSource(..),
-                                     SubscriptionId(..),
+                                     SubscriptionId(..), SkuAttributes(..),
+                                     SkuId(..), SkuPrice(..), SkuActive(..),
+                                     SkuImage(..),
                                      TaxPercent(..), TimeRange(..),
                                      TokenId(..), TransactionId(..),
                                      TransactionType(..), TransferId(..),
@@ -405,6 +407,26 @@ instance ToStripeParam ProductActive where
 instance ToStripeParam Shippable where
   toStripeParam (Shippable s) =
     (("shippable", if s then "true" else "false") :)
+
+instance ToStripeParam SkuId where
+  toStripeParam (SkuId sid) =
+    (("id", Text.encodeUtf8 sid) :)
+
+instance ToStripeParam SkuActive where
+  toStripeParam (SkuActive a) =
+    (("active", if a then "true" else "false") :)
+
+instance ToStripeParam SkuPrice where
+  toStripeParam (SkuPrice p) =
+    (("price", toBytestring p) :)
+
+instance ToStripeParam SkuImage where
+  toStripeParam (SkuImage i) =
+    (("image", Text.encodeUtf8 i) :)
+
+instance ToStripeParam SkuAttributes where
+  toStripeParam (SkuAttributes kvs) =
+    (toMetaData kvs ++)
 
 instance ToStripeParam Prorate where
   toStripeParam (Prorate p) =

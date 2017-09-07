@@ -1981,7 +1981,7 @@ instance FromJSON Caption where
 newtype ProductActive = ProductActive Bool
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
--- | JSON instance for an `Active`
+-- | JSON instance for a `ProductActive`
 instance FromJSON ProductActive where
     parseJSON = fmap ProductActive . parseJSON
 
@@ -2070,14 +2070,14 @@ instance FromJSON Shippable where
 -- | type for a `Sku`
 data Sku = Sku {
       skuId         :: SkuId
-    , skuActive     :: Bool
+    , skuActive     :: SkuActive
     , skuAttributes :: SkuAttributes
     , skuCreated    :: UTCTime
     , skuCurrency   :: Currency
-    , skuImage      :: Maybe Text
+    , skuImage      :: Maybe SkuImage
     , skuLiveMode   :: Bool
     , skuMetaData   :: MetaData
-    , skuPrice      :: Int
+    , skuPrice      :: SkuPrice
     , skuProduct    :: ProductId
     , skuUpdated    :: UTCTime
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
@@ -2106,6 +2106,33 @@ newtype SkuId = SkuId Text
 -- | JSON instance for a `SkuId`
 instance FromJSON SkuId where
     parseJSON = fmap SkuId . parseJSON
+
+------------------------------------------------------------------------------
+-- | Whether a `Sku` is active
+newtype SkuActive = SkuActive Bool
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SkuActive`
+instance FromJSON SkuActive where
+    parseJSON = fmap SkuActive . parseJSON
+
+------------------------------------------------------------------------------
+-- | Price for a `Sku`
+newtype SkuPrice = SkuPrice Int
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SkuPrice`
+instance FromJSON SkuPrice where
+    parseJSON = fmap SkuPrice . parseJSON
+
+------------------------------------------------------------------------------
+-- | Image for a `Sku`
+newtype SkuImage = SkuImage Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SkuImage`
+instance FromJSON SkuImage where
+    parseJSON = fmap SkuImage . parseJSON
 
 ------------------------------------------------------------------------------
 -- | Attributes for a `Sku`
