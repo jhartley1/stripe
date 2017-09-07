@@ -1399,6 +1399,11 @@ newtype ApplicationFeeAmount = ApplicationFeeAmount Integer
 newtype ApplicationId =
   ApplicationId Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
+-- | JSON instance for `ApplicationId`
+instance FromJSON ApplicationId where
+    parseJSON (String x) = pure $ ApplicationId x
+    parseJSON _          = mzero
+
 ------------------------------------------------------------------------------
 -- | JSON Instance for `ApplicationFee`
 instance FromJSON ApplicationFee where
@@ -1804,6 +1809,125 @@ instance FromJSON SourceUsage where
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
+-- | type for an `Order` object
+data Order = Order {
+      orderId             :: OrderId
+    , orderAmount         :: Int
+    , orderAmountReturned :: Maybe Int
+    , orderApplication    :: Maybe ApplicationId
+    , orderApplicationFee :: Maybe Int
+    , orderCharge         :: Maybe ChargeId
+    , orderCreated        :: UTCTime
+    , orderCurrency       :: Currency
+    , orderCustomer       :: Maybe CustomerId
+    , orderEmail          :: Maybe Text
+    , orderItems          :: [OrderItem]
+    , orderLiveMode       :: Bool
+    , orderMetaData       :: MetaData
+    , orderUpdated        :: UTCTime
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for an `Order`
+instance FromJSON Order where
+    parseJSON (Object o) =
+        Order <$> o .:  "id"
+              <*> o .:  "amount"
+              <*> o .:? "amount_returned"
+              <*> o .:? "application"
+              <*> o .:? "application_fee"
+              <*> o .:? "charge"
+              <*> fmap fromSeconds (o .: "created")
+              <*> o .:  "currency"
+              <*> o .:? "customer"
+              <*> o .:? "email"
+              <*> o .:  "items"
+              <*> o .:  "livemode"
+              <*> o .:  "metadata"
+              <*> fmap fromSeconds (o .: "updated")
+
+------------------------------------------------------------------------------
+-- | Id for an `Order` object
+newtype OrderId = OrderId Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for `OrderId`
+instance FromJSON OrderId where
+    parseJSON (String x) = pure (OrderId x)
+    parseJSON _          = mzero
+
+------------------------------------------------------------------------------
+-- | OrderItem for an `Order` object
+data OrderItem = OrderItem {
+      orderItemAmount :: Int
+    , orderItemCurrency :: Currency
+    , orderItemDescription :: Text
+    , orderItemQuantity :: Maybe Int
+    , orderItemType :: Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for an `OrderItem`
+instance FromJSON OrderItem where
+    parseJSON (Object o) =
+        OrderItem <$> o .:  "amount"
+                  <*> o .:  "currency"
+                  <*> o .:  "description"
+                  <*> o .:? "quantity"
+                  <*> o .:  "type"
+
+------------------------------------------------------------------------------
+-- | type for a `Review`
+data Review = Review {
+      reviewId :: ReviewId
+    , reviewCharge :: ChargeId
+    , reviewCreated :: UTCTime
+    , reviewLiveMode :: Bool
+    , reviewOpen :: Bool
+    , reviewReason :: ReviewReason
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `Review`
+instance FromJSON Review where
+    parseJSON (Object o) =
+        Review <$> o .: "id"
+               <*> o .: "charge"
+               <*> fmap fromSeconds (o .: "created")
+               <*> o .: "livemode"
+               <*> o .: "open"
+               <*> o .: "reason"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | Id for a `Review`
+newtype ReviewId = ReviewId Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for  a `ReviewId`
+instance FromJSON ReviewId where
+    parseJSON (String x) = pure $ ReviewId x
+    parseJSON _          = mzero
+
+------------------------------------------------------------------------------
+-- | Reason for a `Review`
+data ReviewReason
+    = ReasonRule
+    | ReasonManual
+    | ReasonApproved
+    | ReasonRefunded
+    | ReasonRefundedAsFraud
+    | ReasonDisputed
+      deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `ReviewReason`
+instance FromJSON ReviewReason where
+    parseJSON (String "rule") = pure ReasonRule
+    parseJSON (String "manual") = pure ReasonManual
+    parseJSON (String "approved") = pure ReasonApproved
+    parseJSON (String "refunded") = pure ReasonRefunded
+    parseJSON (String "refunded_as_fraud") = pure ReasonRefundedAsFraud
+    parseJSON (String "disputed") = pure ReasonDisputed
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
 -- | transaction type for `BalanceTransaction`
 data TransactionType
   = ChargeTxn
@@ -1997,6 +2121,8 @@ data EventData =
   | CardEvent Card
   | SubscriptionEvent Subscription
   | SourceEvent Source
+  | OrderEvent Order
+  | ReviewEvent Review
   | DiscountEvent Discount
   | InvoiceItemEvent InvoiceItem
   | UnknownEventData
@@ -2063,12 +2189,19 @@ instance FromJSON Event where
         "invoice.updated" -> InvoiceEvent <$> obj .: "object"
         "invoice.payment_succeeded" -> InvoiceEvent <$> obj .: "object"
         "invoice.payment_failed" -> InvoiceEvent <$> obj .: "object"
+        "invoice.upcoming" -> InvoiceEvent <$> obj .: "object"
         "invoiceitem.created" -> InvoiceItemEvent <$> obj .: "object"
         "invoiceitem.updated" -> InvoiceItemEvent <$> obj .: "object"
         "invoiceitem.deleted" -> InvoiceItemEvent <$> obj .: "object"
+        "order.created" -> OrderEvent <$> obj .: "object"
+        "order.payment_failed" -> OrderEvent <$> obj .: "object"
+        "order.payment_succeeded" -> OrderEvent <$> obj .: "object"
+        "order.updated" -> OrderEvent <$> obj .: "object"
         "plan.created" -> PlanEvent <$> obj .: "object"
         "plan.updated" -> PlanEvent <$> obj .: "object"
         "plan.deleted" -> PlanEvent <$> obj .: "object"
+        "review.opened" -> ReviewEvent <$> obj .: "review"
+        "review.closed" -> ReviewEvent <$> obj .: "review"
         "coupon.created" -> CouponEvent <$> obj .: "object"
         "coupon.updated" -> CouponEvent <$> obj .: "object"
         "coupon.deleted" -> CouponEvent <$> obj .: "object"
