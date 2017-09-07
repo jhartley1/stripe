@@ -13,7 +13,7 @@ import           Web.Stripe.Customer
 planTests :: StripeSpec
 planTests stripe = do
   describe "Plan tests" $ do
-    it "Succesfully creates a Plan" $ do
+    it "Successfully creates a Plan" $ do
       planid <- makePlanId
       result <- stripe $ do
         p <- createPlan planid
@@ -24,7 +24,7 @@ planTests stripe = do
         void $ deletePlan planid
         return p
       result `shouldSatisfy` isRight
-    it "Succesfully deletes a Plan" $ do
+    it "Successfully deletes a Plan" $ do
       planid <- makePlanId
       result <- stripe $ do
         Plan { planId = pid } <-
@@ -35,7 +35,7 @@ planTests stripe = do
           (PlanName "sample plan")
         void $ deletePlan pid
       result `shouldSatisfy` isRight
-    it "Succesfully updates a Plan" $ do
+    it "Successfully updates a Plan" $ do
       planid <- makePlanId
       result <- stripe $ do
         Plan { planId = pid } <-
@@ -58,7 +58,7 @@ planTests stripe = do
       pm `shouldBe` (MetaData [("key", "value")])
       pname `shouldBe` "cookie"
       pdesc `shouldBe` (Just $ StatementDescriptor "test")
-    it "Succesfully retrieves a Plan" $ do
+    it "Successfully retrieves a Plan" $ do
       planid <- makePlanId
       result <- stripe $ do
         Plan { planId = pid } <-
@@ -71,6 +71,6 @@ planTests stripe = do
         void $ deletePlan pid
         return r
       result `shouldSatisfy` isRight
-    it "Succesfully retrieves a list of Plans" $ do
+    it "Successfully retrieves a list of Plans" $ do
       result <- stripe $ void $ getPlans
       result `shouldSatisfy` isRight

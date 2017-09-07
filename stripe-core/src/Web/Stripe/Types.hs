@@ -2009,9 +2009,9 @@ data Product = Product {
       productId :: ProductId
     , productActive :: ProductActive
     , productAttributes :: ProductAttributes
-    , productCaption :: Maybe Text
+    , productCaption :: Maybe Caption
     , productCreated :: UTCTime
-    , productDescription :: Description
+    , productDescription :: Maybe Description
     , productImages :: [Text]
     , productLiveMode :: Bool
     , productMetaData :: MetaData
@@ -2029,7 +2029,7 @@ instance FromJSON Product where
                 <*> o .: "attributes"
                 <*> o .:? "caption"
                 <*> fmap fromSeconds (o .: "created")
-                <*> o .: "description"
+                <*> o .:? "description"
                 <*> o .: "images"
                 <*> o .: "livemode"
                 <*> o .: "metadata"

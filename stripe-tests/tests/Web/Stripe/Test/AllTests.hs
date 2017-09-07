@@ -18,7 +18,9 @@ import           Web.Stripe.Test.Dispute               (disputeTests)
 import           Web.Stripe.Test.Invoice               (invoiceTests)
 import           Web.Stripe.Test.InvoiceItem           (invoiceItemTests)
 import           Web.Stripe.Test.Plan                  (planTests)
+import           Web.Stripe.Test.Product               (productTests)
 import           Web.Stripe.Test.Refund                (refundTests)
+import           Web.Stripe.Test.Sku                   (skuTests)
 import           Web.Stripe.Test.Subscription          (subscriptionTests)
 import           Web.Stripe.Test.Token                 (tokenTests)
 import           Web.Stripe.Test.Transfer              (transferTests)
@@ -51,3 +53,5 @@ allTests stripe' = do
     balanceTests stripe
     tokenTests stripe
     eventTests stripe
+    productTests stripe
+    skuTests stripe

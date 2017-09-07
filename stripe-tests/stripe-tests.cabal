@@ -54,7 +54,9 @@ library
                        Web.Stripe.Test.InvoiceItem
                        Web.Stripe.Test.Plan
                        Web.Stripe.Test.Prelude
+                       Web.Stripe.Test.Product
                        Web.Stripe.Test.Refund
+                       Web.Stripe.Test.Sku
                        Web.Stripe.Test.Subscription
                        Web.Stripe.Test.Token
                        Web.Stripe.Test.Transfer
