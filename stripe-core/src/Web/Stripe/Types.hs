@@ -1930,15 +1930,15 @@ instance FromJSON ReviewReason where
 ------------------------------------------------------------------------------
 -- | type for a `Payout`
 data Payout = Payout {
-      payoutId :: PayoutId
-    , payoutAmount :: Int
-    , payoutArrivalDate :: UTCTime
-    , payoutCreated :: UTCTime
-    , payoutCurrency :: Currency
-    , payoutDescripiton :: Text
+      payoutId             :: PayoutId
+    , payoutAmount         :: Int
+    , payoutArrivalDate    :: UTCTime
+    , payoutCreated        :: UTCTime
+    , payoutCurrency       :: Currency
+    , payoutDescripiton    :: Text
     , payoutFailureMessage :: Maybe Text
-    , payoutLiveMode :: Bool
-    , payoutMetaData :: MetaData
+    , payoutLiveMode       :: Bool
+    , payoutMetaData       :: MetaData
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 -- | JSON instance for a `Payout`
@@ -1964,6 +1964,103 @@ newtype PayoutId = PayoutId Text
 instance FromJSON PayoutId where
     parseJSON (String x) = pure $ PayoutId x
     parseJSON _          = mzero
+
+------------------------------------------------------------------------------
+-- | type for a `Product`
+data Product = Product {
+      productId :: ProductId
+    , productActive :: Bool
+    , productAttributes :: [Text]
+    , productCaption :: Maybe Text
+    , productCreated :: UTCTime
+    , productDescription :: Text
+    , productImages :: [Text]
+    , productLiveMode :: Bool
+    , productMetaData :: MetaData
+    , productName :: Text
+    , productShippable :: Bool
+    , productUpdated :: UTCTime
+    , productUrl :: Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `Product`
+instance FromJSON Product where
+    parseJSON (Object o) =
+        Product <$> o .: "id"
+                <*> o .: "active"
+                <*> o .: "attributes"
+                <*> o .:? "caption"
+                <*> fmap fromSeconds (o .: "created")
+                <*> o .: "description"
+                <*> o .: "images"
+                <*> o .: "livemode"
+                <*> o .: "metadata"
+                <*> o .: "name"
+                <*> o .: "shippable"
+                <*> fmap fromSeconds (o .: "updated")
+                <*> o .: "url"
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | Id for a `Product`
+newtype ProductId = ProductId Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `ProductId`
+instance FromJSON ProductId where
+    parseJSON (String x) = pure $ ProductId x
+    parseJSON _          = mzero
+
+------------------------------------------------------------------------------
+-- | type for a `Sku`
+data Sku = Sku {
+      skuId         :: SkuId
+    , skuActive     :: Bool
+    , skuAttributes :: SkuAttributes
+    , skuCreated    :: UTCTime
+    , skuCurrency   :: Currency
+    , skuImage      :: Maybe Text
+    , skuLiveMode   :: Bool
+    , skuMetaData   :: MetaData
+    , skuPrice      :: Int
+    , skuProduct    :: ProductId
+    , skuUpdated    :: UTCTime
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `Sku`
+instance FromJSON Sku where
+    parseJSON (Object o) =
+        Sku <$> o .: "id"
+            <*> o .: "active"
+            <*> o .: "attributes"
+            <*> fmap fromSeconds (o .: "created")
+            <*> o .: "currency"
+            <*> o .:? "image"
+            <*> o .: "livemode"
+            <*> o .: "metadata"
+            <*> o .: "price"
+            <*> o .: "product"
+            <*> fmap fromSeconds (o .: "updated")
+    parseJSON _ = mzero
+
+------------------------------------------------------------------------------
+-- | Id for a `Sku`
+newtype SkuId = SkuId Text
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SkuId`
+instance FromJSON SkuId where
+    parseJSON (String x) = pure $ SkuId x
+    parseJSON _          = mzero
+
+------------------------------------------------------------------------------
+-- | Attributes for a `Sku`
+newtype SkuAttributes = SkuAttributes [ (Text, Text) ]
+    deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SkuAttributes`
+instance FromJSON SkuAttributes where
+    parseJSON j = (SkuAttributes . H.toList) <$> (parseJSON j)
 
 ------------------------------------------------------------------------------
 -- | transaction type for `BalanceTransaction`
@@ -2188,7 +2285,9 @@ data EventData =
   | SubscriptionEvent Subscription
   | SourceEvent Source
   | OrderEvent Order
+  | ProductEvent Product
   | ReviewEvent Review
+  | SkuEvent Sku
   | DiscountEvent Discount
   | InvoiceItemEvent InvoiceItem
   | UnknownEventData
@@ -2273,8 +2372,14 @@ instance FromJSON Event where
         "plan.created" -> PlanEvent <$> obj .: "object"
         "plan.updated" -> PlanEvent <$> obj .: "object"
         "plan.deleted" -> PlanEvent <$> obj .: "object"
+        "product.created" -> ProductEvent <$> obj .: "object"
+        "product.deleted" -> ProductEvent <$> obj .: "object"
+        "product.updated" -> ProductEvent <$> obj .: "object"
         "review.opened" -> ReviewEvent <$> obj .: "object"
         "review.closed" -> ReviewEvent <$> obj .: "object"
+        "sku.created" -> SkuEvent <$> obj .: "object"
+        "sku.deleted" -> SkuEvent <$> obj .: "object"
+        "sku.updated" -> SkuEvent <$> obj .: "object"
         "coupon.created" -> CouponEvent <$> obj .: "object"
         "coupon.updated" -> CouponEvent <$> obj .: "object"
         "coupon.deleted" -> CouponEvent <$> obj .: "object"
@@ -2813,7 +2918,7 @@ instance FromJSON BitcoinReceiver where
                      <*> o .: "uncaptured_funds"
                      <*> o .:? "description"
                      <*> o .: "email"
-                     <*> (MetaData . H.toList <$> o .: "metadata")
+                     <*> o .: "metadata"
                      <*> o .:? "refund_address"
                      <*> o .:? "transactions"
                      <*> (fmap PaymentId <$> o .:? "payment")
