@@ -20,7 +20,7 @@ import           Control.Applicative (pure, (<$>), (<*>), (<|>))
 import           Control.Monad       (mzero)
 import           Data.Aeson          (FromJSON (parseJSON), ToJSON(..),
                                       Value (String, Object, Bool), (.:),
-                                      (.:?), (.!=))
+                                      (.:?), (.!=), withObject, withText)
 import           Data.Data           (Data, Typeable)
 import qualified Data.HashMap.Strict as H
 import           Data.Ratio          ((%))
@@ -108,7 +108,7 @@ newtype ChargeId
 ------------------------------------------------------------------------------
 -- | JSON Instance for `ChargeId`
 instance FromJSON ChargeId where
-    parseJSON = fmap ChargeId . parseJSON
+    parseJSON = withText "charge id" (pure . ChargeId)
 
 ------------------------------------------------------------------------------
 -- | `StatementDescriptor` to be added to a `Charge`
@@ -116,7 +116,7 @@ newtype StatementDescriptor =
   StatementDescriptor Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 instance FromJSON StatementDescriptor where
-  parseJSON v = StatementDescriptor <$> parseJSON v
+    parseJSON = withText "statement_descriptor" (pure . StatementDescriptor)
 
 ------------------------------------------------------------------------------
 -- | `Charge` object in `Stripe` API
@@ -149,7 +149,8 @@ data Charge = Charge {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Charge`
 instance FromJSON Charge where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "charge" $ \o ->
         Charge <$> (ChargeId <$> o .: "id")
                <*> o .: "object"
                <*> (fromSeconds <$> o .: "created")
@@ -173,7 +174,6 @@ instance FromJSON Charge where
                <*> o .:? "statement_descriptor"
                <*> o .:? "receipt_email"
                <*> o .:? "receipt_number"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Capture for `Charge`
@@ -201,7 +201,8 @@ data Refund = Refund {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Refund`
 instance FromJSON Refund where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "refund" $ \o ->
         Refund <$> (RefundId <$> o .: "id")
                <*> o .: "amount"
                <*> o .: "currency"
@@ -210,7 +211,6 @@ instance FromJSON Refund where
                <*> o .: "charge"
                <*> o .: "balance_transaction"
                <*> o .: "metadata"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `RefundApplicationFee`
@@ -235,7 +235,7 @@ newtype CustomerId
 ------------------------------------------------------------------------------
 -- | JSON Instance for `CustomerId`
 instance FromJSON CustomerId where
-    parseJSON = fmap CustomerId . parseJSON
+    parseJSON = withText "customer id" (pure . CustomerId)
 
 ------------------------------------------------------------------------------
 -- | `Customer` object
@@ -262,29 +262,29 @@ data Customer = Customer {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Customer`
 instance FromJSON Customer where
-    parseJSON (Object o)
-        = (Customer
-           <$> o .: "object"
-           <*> (fromSeconds <$> o .: "created")
-           <*> (CustomerId <$> o .: "id")
-           <*> o .: "livemode"
-           <*> o .:? "description"
-           <*> (fmap Email <$> o .:? "email")
-           <*> o .: "delinquent"
-           <*> o .: "subscriptions"
-           <*> o .:? "discount"
-           <*> o .: "account_balance"
-           <*> o .: "sources"
-           <*> o .:? "currency"
-           <*> o .:? "default_source"
-           <*> o .: "metadata"
-           <|> DeletedCustomer -- FIXME
-           <$> o .: "deleted"
-           <*> (CustomerId <$> o .: "id"))
-           <|> DeletedCustomer
-           <$> o .:? "deleted"
-           <*> (CustomerId <$> o .: "id")
-    parseJSON _ = mzero
+    parseJSON =
+      withObject "customer" $ \o ->
+        (Customer
+         <$> o .: "object"
+         <*> (fromSeconds <$> o .: "created")
+         <*> (CustomerId <$> o .: "id")
+         <*> o .: "livemode"
+         <*> o .:? "description"
+         <*> (fmap Email <$> o .:? "email")
+         <*> o .: "delinquent"
+         <*> o .: "subscriptions"
+         <*> o .:? "discount"
+         <*> o .: "account_balance"
+         <*> o .: "sources"
+         <*> o .:? "currency"
+         <*> o .:? "default_source"
+         <*> o .: "metadata"
+         <|> DeletedCustomer -- FIXME?
+         <$> o .: "deleted"
+         <*> (CustomerId <$> o .: "id"))
+         <|> DeletedCustomer
+         <$> o .:? "deleted"
+         <*> (CustomerId <$> o .: "id")
 
 ------------------------------------------------------------------------------
 -- | AccountBalance for a `Customer`
@@ -392,7 +392,8 @@ data Card = Card {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Card`
 instance FromJSON Card where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "card" $ \o ->
         Card <$> (CardId <$> o .: "id")
              <*> o .: "object"
              <*> o .: "last4"
@@ -414,7 +415,6 @@ instance FromJSON Card where
              <*> o .:? "address_zip_check"
              <*> o .:? "customer"
              <*> o .: "metadata"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `NewCard` contains the data needed to create a new `Card`
@@ -471,7 +471,7 @@ newtype SubscriptionId = SubscriptionId { getSubscriptionId :: Text }
 ------------------------------------------------------------------------------
 -- | JSON Instance for `SubscriptionId`
 instance FromJSON SubscriptionId where
-    parseJSON = fmap SubscriptionId . parseJSON
+    parseJSON = withText "subscription id" (pure . SubscriptionId)
 
 ------------------------------------------------------------------------------
 -- | Subscription Object
@@ -499,7 +499,8 @@ data Subscription = Subscription {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Subscription`
 instance FromJSON Subscription where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "subscription" $ \o ->
        Subscription <$> (SubscriptionId <$> o .: "id")
                     <*> o .: "plan"
                     <*> o .: "object"
@@ -518,7 +519,6 @@ instance FromJSON Subscription where
                     <*> o .:? "discount"
                     <*> o .: "metadata"
                     <*> o .:? "tax_percent"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Status of a `Subscription`
@@ -568,7 +568,8 @@ data Plan = Plan {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Plan`
 instance FromJSON Plan where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "plan" $ \o ->
         Plan <$> o .: "interval"
              <*> o .: "name"
              <*> (fromSeconds <$> o .: "created")
@@ -581,7 +582,6 @@ instance FromJSON Plan where
              <*> o .:? "trial_period_days"
              <*> o .: "metadata"
              <*> o .:? "statement_descriptor"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `TrialPeriod` for a Plan
@@ -677,7 +677,8 @@ data Coupon = Coupon {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Coupon`
 instance FromJSON Coupon where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "coupon" $ \o ->
         Coupon <$> (CouponId <$> o .: "id")
                <*> (fromSeconds <$> o .: "created")
                <*> o .: "percent_off"
@@ -691,7 +692,6 @@ instance FromJSON Coupon where
                <*> o .:? "duration_in_months"
                <*> o .: "valid"
                <*> o .: "metadata"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `CouponId` for a `Coupon`
@@ -746,14 +746,14 @@ data Discount = Discount {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Discount`
 instance FromJSON Discount where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "discount" $ \o ->
         Discount <$> o .: "coupon"
                  <*> (fromSeconds <$> o .: "start")
                  <*> (fmap fromSeconds <$> o .:? "end")
                  <*> o .: "customer"
                  <*> o .: "object"
                  <*> (fmap SubscriptionId <$> o .:? "subscription")
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `Invoice` for a `Coupon`
@@ -764,7 +764,7 @@ newtype InvoiceId =
 ------------------------------------------------------------------------------
 -- | JSON Instance for `InvoiceId`
 instance FromJSON InvoiceId where
-    parseJSON = fmap InvoiceId . parseJSON
+    parseJSON = withText "invoice id" (pure . InvoiceId)
 
 ------------------------------------------------------------------------------
 -- | `Invoice` Object
@@ -802,7 +802,8 @@ data Invoice = Invoice {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Invoice`
 instance FromJSON Invoice where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "invoice" $ \o ->
        Invoice <$> (fromSeconds <$> o .: "date")
                <*> (fmap InvoiceId <$> o .:? "id")
                <*> (fromSeconds <$> o .: "period_start")
@@ -831,18 +832,15 @@ instance FromJSON Invoice where
                <*> o .:? "statement_descriptor"
                <*> o .:? "description"
                <*> o .: "metadata"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Whether a `InvoiceLineItem` or `InvoiceItem` is discountable
-newtype Discountable
-    = Discountable Bool
+newtype Discountable = Discountable Bool
       deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | `InvoiceItemId` for `InvoiceItem`
-newtype InvoiceItemId
-    = InvoiceItemId Text
+newtype InvoiceItemId = InvoiceItemId Text
       deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -867,7 +865,8 @@ data InvoiceItem = InvoiceItem {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `InvoiceItem`
 instance FromJSON InvoiceItem where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "invoice_item" $ \o ->
        InvoiceItem <$> o .: "object"
                    <*> (InvoiceItemId <$> o .: "id")
                    <*> (fromSeconds <$> o .: "date")
@@ -882,7 +881,6 @@ instance FromJSON InvoiceItem where
                    <*> (fmap Quantity <$> o .:? "quantity")
                    <*> o .:? "subscription"
                    <*> o .: "metadata"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `InvoiceLineItemId` for an `InvoiceLineItem`
@@ -931,15 +929,16 @@ data Period = Period {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Period`
 instance FromJSON Period where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "period" $ \o ->
        Period <$> (fromSeconds <$> o .: "start")
               <*> (fromSeconds <$> o .: "end")
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `InvoiceLineItem`
 instance FromJSON InvoiceLineItem where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "invoice_line_item" $ \o ->
        InvoiceLineItem <$> (InvoiceLineItemId <$> o .: "id")
                        <*> o .: "object"
                        <*> o .: "type"
@@ -953,8 +952,6 @@ instance FromJSON InvoiceLineItem where
                        <*> o .:? "plan"
                        <*> o .:? "description"
                        <*> o .: "metadata"
-   parseJSON _ = mzero
-
 
 ------------------------------------------------------------------------------
 -- | `Closed` - invoice closed or not
@@ -1130,7 +1127,8 @@ data EvidenceDetails = EvidenceDetails {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Dispute`
 instance FromJSON Dispute where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "dispute" $ \o ->
         Dispute <$> (DisputeId <$> o .: "id")
                 <*> o .: "charge"
                 <*> o .: "amount"
@@ -1145,12 +1143,12 @@ instance FromJSON Dispute where
                 <*> o .: "evidence_details"
                 <*> o .: "evidence"
                 <*> o .: "metadata"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `DisputeEvidence`
 instance FromJSON DisputeEvidence where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "dispute_evidence" $ \o ->
         DisputeEvidence <$> o .:? "access_activity_log"
                         <*> o .:? "billing_address"
                         <*> o .:? "cancellation_policy"
@@ -1177,15 +1175,14 @@ instance FromJSON DisputeEvidence where
                         <*> o .:? "shipping_tracking_number"
                         <*> o .:? "uncategorized_file"
                         <*> o .:? "uncategorized_text"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `EvidenceDetails`
 instance FromJSON EvidenceDetails where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "evidence_details" $ \o ->
         EvidenceDetails <$> (fromSeconds <$> o .: "due_by")
                         <*> o .: "submission_count"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `TransferId`
@@ -1232,7 +1229,8 @@ data Transfer = Transfer {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Transfer`
 instance FromJSON Transfer where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "transfer" $ \o ->
         Transfer <$> (TransferId <$> o .: "id")
                     <*> o .: "object"
                     <*> (fromSeconds <$> o .: "created")
@@ -1247,7 +1245,6 @@ instance FromJSON Transfer where
                     <*> o .:? "failure_code"
                     <*> o .:? "statement_descriptor"
                     <*> o .: "metadata"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `BankAccount` Object
@@ -1272,23 +1269,23 @@ data BankAccount = BankAccount {
 ------------------------------------------------------------------------------
 -- | `BankAccount` JSON Instance
 instance FromJSON BankAccount where
-   parseJSON (Object o) =
-     BankAccount <$> (BankAccountId <$> o .: "id")
-                 <*> o .: "object"
-                 <*> o .: "account"
-                 <*> o .: "account_holder_name"
-                 <*> o .: "account_holder_type"
-                 <*> o .: "bank_name"
-                 <*> (Country <$> o .: "country")
-                 <*> o .: "currency"
-                 <*> o .: "customer"
-                 <*> o .: "default_for_currency"
-                 <*> o .: "fingerprint"
-                 <*> o .: "last4"
-                 <*> o .: "metadata"
-                 <*> o .: "routing_number"
-                 <*> o .: "status"
-   parseJSON _ = mzero
+   parseJSON =
+     withObject "bank_account" $ \o ->
+       BankAccount <$> (BankAccountId <$> o .: "id")
+                   <*> o .: "object"
+                   <*> o .: "account"
+                   <*> o .: "account_holder_name"
+                   <*> o .: "account_holder_type"
+                   <*> o .: "bank_name"
+                   <*> (Country <$> o .: "country")
+                   <*> o .: "currency"
+                   <*> o .: "customer"
+                   <*> o .: "default_for_currency"
+                   <*> o .: "fingerprint"
+                   <*> o .: "last4"
+                   <*> o .: "metadata"
+                   <*> o .: "routing_number"
+                   <*> o .: "status"
 
 ------------------------------------------------------------------------------
 -- | `BankAccountHolderType` for `BankAccount`
@@ -1387,13 +1384,12 @@ newtype ApplicationFeeAmount = ApplicationFeeAmount Integer
 
 ------------------------------------------------------------------------------
 -- | `ApplicationId` object
-newtype ApplicationId =
-  ApplicationId Text deriving (Read, Show, Eq, Ord, Data, Typeable)
+newtype ApplicationId = ApplicationId Text
+  deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 -- | JSON instance for `ApplicationId`
 instance FromJSON ApplicationId where
-    parseJSON (String x) = pure $ ApplicationId x
-    parseJSON _          = mzero
+    parseJSON = withText "application id" (pure . ApplicationId)
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `ApplicationFee`
@@ -1417,8 +1413,7 @@ instance FromJSON ApplicationFee where
 
 ------------------------------------------------------------------------------
 -- | `FeeId` for objects with Fees
-newtype FeeId =
-  FeeId Text
+newtype FeeId = FeeId Text
   deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -1437,28 +1432,26 @@ data ApplicationFeeRefund = ApplicationFeeRefund {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `ApplicationFeeRefund`
 instance FromJSON ApplicationFeeRefund where
-    parseJSON (Object o) = ApplicationFeeRefund
-              <$> (RefundId <$> o .: "id")
-              <*> o .: "amount"
-              <*> o .: "currency"
-              <*> (fromSeconds <$> o .: "created")
-              <*> o .: "object"
-              <*> o .:? "balance_transaction"
-              <*> (FeeId <$> o .: "fee")
-              <*> o .: "metadata"
-    parseJSON _ = mzero
+    parseJSON =
+      withObject "application_fee_refund" $ \o ->
+        ApplicationFeeRefund <$> (RefundId <$> o .: "id")
+                             <*> o .: "amount"
+                             <*> o .: "currency"
+                             <*> (fromSeconds <$> o .: "created")
+                             <*> o .: "object"
+                             <*> o .:? "balance_transaction"
+                             <*> (FeeId <$> o .: "fee")
+                             <*> o .: "metadata"
 
 ------------------------------------------------------------------------------
 -- | `AccountId` of an `Account`
-newtype AccountId
-  = AccountId Text
+newtype AccountId = AccountId Text
   deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `AccountId`
 instance FromJSON AccountId where
-   parseJSON (String aid) = pure $ AccountId aid
-   parseJSON _ = mzero
+  parseJSON = withText "account id" (pure . AccountId)
 
 ------------------------------------------------------------------------------
 -- | `Account` Object
@@ -1484,7 +1477,8 @@ data Account = Account {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Account`
 instance FromJSON Account where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "account" $ \o ->
        Account <$> (AccountId <$> o .:  "id")
                <*> (Email <$> o .:  "email")
                <*> o .:   "display_name"
@@ -1501,7 +1495,6 @@ instance FromJSON Account where
                <*> o .:?  "support_phone"
                <*> o .:   "timezone"
                <*> o .:   "type"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | type for an `Account`
@@ -1530,12 +1523,12 @@ data Balance = Balance {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Balance`
 instance FromJSON Balance where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "balance" $ \o ->
        Balance <$> o .: "pending"
                <*> o .: "available"
                <*> o .: "livemode"
                <*> o .: "object"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `BalanceAmount` Object
@@ -1547,10 +1540,10 @@ data BalanceAmount = BalanceAmount {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `BalanceAmount`
 instance FromJSON BalanceAmount where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "balance_amount" $ \o ->
        BalanceAmount <$> o .: "amount"
                      <*> o .: "currency"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `BalanceTransaction` Object
@@ -1573,7 +1566,8 @@ data BalanceTransaction = BalanceTransaction {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `BalanceTransaction`
 instance FromJSON BalanceTransaction where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "balance_transaction" $ \o ->
        BalanceTransaction <$> (TransactionId <$> o .: "id")
                           <*> o .: "object"
                           <*> o .: "amount"
@@ -1587,7 +1581,6 @@ instance FromJSON BalanceTransaction where
                           <*> o .: "fee_details"
                           <*> o .: "source"
                           <*> o .:? "description"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `TransactionId` of a `Transaction`
@@ -1597,8 +1590,7 @@ newtype TransactionId = TransactionId Text
 ------------------------------------------------------------------------------
 -- | JSON Instance for `TransactionId`
 instance FromJSON TransactionId where
-    parseJSON (String x)   = pure (TransactionId x)
-    parseJSON _            = mzero
+    parseJSON = withText "transaction id" (pure . TransactionId)
 
 ------------------------------------------------------------------------------
 -- | `FeeDetails` Object
@@ -1613,13 +1605,13 @@ data FeeDetails = FeeDetails {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `FeeDetails`
 instance FromJSON FeeDetails where
-   parseJSON (Object o) =
+   parseJSON =
+     withObject "fee_details" $ \o ->
        FeeDetails <$> o .: "amount"
                   <*> o .: "currency"
                   <*> o .: "type"
                   <*> o .: "description"
                   <*> o .:? "application"
-   parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `BalanceSource` used for filtering `Balance` transactions. It should contain
@@ -1647,7 +1639,7 @@ data Source = Source {
 
 -- | JSON instance for `Source`
 instance FromJSON Source where
-    parseJSON (Object o) = do
+    parseJSON = withObject "source" $ \o -> do
       sourceId <- o .: "id"
       sourceAmount <- o .:? "amount"
       sourceClientSecret <- o .: "client_secret"
@@ -1668,7 +1660,6 @@ instance FromJSON Source where
                 SourceAuthFlowCodeVerification <$> o .: "code_verification"
             "none" -> pure SourceAuthFlowNone
       return Source{..}
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for a `Source` object
@@ -1677,8 +1668,7 @@ newtype SourceId = SourceId Text
 
 -- | JSON instance for `SourceId`
 instance FromJSON SourceId where
-    parseJSON (String x)   = pure (SourceId x)
-    parseJSON _            = mzero
+    parseJSON = withText "source id" (pure . SourceId)
 
 ------------------------------------------------------------------------------
 -- | type for a `Source` object
@@ -1716,12 +1706,12 @@ data SourceFlowReceiver = SourceFlowReceiver {
 
 -- | JSON instance for `SourceFlowReceiver`
 instance FromJSON SourceFlowReceiver where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "receiver" $ \o ->
         SourceFlowReceiver <$> o .: "address"
                            <*> o .: "amount_charged"
                            <*> o .: "amount_received"
                            <*> o .: "amount_returned"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | flow for a `Source` object
@@ -1741,10 +1731,10 @@ data SourceFlowCodeVerification = SourceFlowCodeVerification {
 
 -- | JSON instance for a `SourceCodeVerification`
 instance FromJSON SourceFlowCodeVerification where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "code_verification" $ \o ->
         SourceFlowCodeVerification <$> o .: "attempts_remaining"
                                    <*> o .: "status"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | redirect for a `Source` object
@@ -1756,11 +1746,11 @@ data SourceFlowRedirect = SourceFlowRedirect {
 
 -- | JSON instance for a `SourceFlowRedirect`
 instance FromJSON SourceFlowRedirect where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "redirect" $ \o ->
         SourceFlowRedirect <$> o .: "return_url"
                            <*> o .: "status"
                            <*> o .: "url"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | status of a `Source` object
@@ -1815,7 +1805,8 @@ data Order = Order {
 
 -- | JSON instance for an `Order`
 instance FromJSON Order where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "order" $ \o ->
         Order <$> o .:  "id"
               <*> o .:  "amount"
               <*> o .:? "amount_returned"
@@ -1830,7 +1821,6 @@ instance FromJSON Order where
               <*> o .:  "livemode"
               <*> o .:  "metadata"
               <*> fmap fromSeconds (o .: "updated")
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for an `Order` object
@@ -1839,8 +1829,7 @@ newtype OrderId = OrderId Text
 
 -- | JSON instance for `OrderId`
 instance FromJSON OrderId where
-    parseJSON (String x) = pure (OrderId x)
-    parseJSON _          = mzero
+    parseJSON = withText  "order id" (pure . OrderId)
 
 ------------------------------------------------------------------------------
 -- | OrderItem for an `Order` object
@@ -1854,13 +1843,13 @@ data OrderItem = OrderItem {
 
 -- | JSON instance for an `OrderItem`
 instance FromJSON OrderItem where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "order_item" $ \o ->
         OrderItem <$> o .:  "amount"
                   <*> o .:  "currency"
                   <*> o .:  "description"
                   <*> o .:? "quantity"
                   <*> o .:  "type"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | type for a `Review`
@@ -1875,14 +1864,14 @@ data Review = Review {
 
 -- | JSON instance for a `Review`
 instance FromJSON Review where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "review" $ \o ->
         Review <$> o .: "id"
                <*> o .: "charge"
                <*> fmap fromSeconds (o .: "created")
                <*> o .: "livemode"
                <*> o .: "open"
                <*> o .: "reason"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for a `Review`
@@ -1891,8 +1880,7 @@ newtype ReviewId = ReviewId Text
 
 -- | JSON instance for  a `ReviewId`
 instance FromJSON ReviewId where
-    parseJSON (String x) = pure $ ReviewId x
-    parseJSON _          = mzero
+    parseJSON = withText "review id" (pure . ReviewId)
 
 ------------------------------------------------------------------------------
 -- | Reason for a `Review`
@@ -1931,7 +1919,8 @@ data Payout = Payout {
 
 -- | JSON instance for a `Payout`
 instance FromJSON Payout where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "payout" $ \o ->
         Payout <$> o .: "id"
                <*> o .: "amount"
                <*> fmap fromSeconds (o .: "arrival_date")
@@ -1941,7 +1930,6 @@ instance FromJSON Payout where
                <*> o .:? "failure_message"
                <*> o .: "livemode"
                <*> o .: "metadata"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for a `Payout`
@@ -2008,7 +1996,8 @@ data Product = Product {
 
 -- | JSON instance for a `Product`
 instance FromJSON Product where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "product" $ \o ->
         Product <$> o .: "id"
                 <*> o .: "active"
                 <*> o .: "attributes"
@@ -2022,7 +2011,6 @@ instance FromJSON Product where
                 <*> o .: "shippable"
                 <*> fmap fromSeconds (o .: "updated")
                 <*> o .:? "url"
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for a `Product`
@@ -2069,7 +2057,8 @@ data Sku = Sku {
 
 -- | JSON instance for a `Sku`
 instance FromJSON Sku where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "sku" $ \o ->
         Sku <$> o .: "id"
             <*> o .: "active"
             <*> o .: "attributes"
@@ -2081,7 +2070,6 @@ instance FromJSON Sku where
             <*> o .: "price"
             <*> o .: "product"
             <*> fmap fromSeconds (o .: "updated")
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Id for a `Sku`
@@ -2478,16 +2466,15 @@ data ConnectApp = ConnectApp {
 ------------------------------------------------------------------------------
 -- | Connect Application JSON instance
 instance FromJSON ConnectApp where
-   parseJSON (Object o) =
-     ConnectApp <$> o .:? "id"
-                <*> o .: "object"
-                <*> o .: "name"
-   parseJSON _  = mzero
+   parseJSON =
+     withObject "connect_application" $ \o ->
+       ConnectApp <$> o .:? "id"
+                  <*> o .: "object"
+                  <*> o .: "name"
 
 ------------------------------------------------------------------------------
 -- | `TokenId` of a `Token`
-newtype TokenId =
-    TokenId Text
+newtype TokenId = TokenId Text
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -2518,24 +2505,24 @@ data Token a = Token {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Token`
 instance FromJSON a => FromJSON (Token a) where
-   parseJSON (Object o) = do
-     tokenId <- TokenId <$> o .: "id"
-     Bool tokenLiveMode <- o .: "livemode"
-     tokenCreated <- fromSeconds <$> o .: "created"
-     Bool tokenUsed <- o .: "used"
-     String tokenObject <- o .: "object"
-     String typ <- o .: "type"
-     tokenType <- pure $ case typ of
-                      "card"         -> TokenCard
-                      "bank_account" -> TokenBankAccount
-                      _ -> error "unspecified type"
-     tokenData <-
-       case typ of
-        "bank_account" -> o .: "bank_account"
-        "card"         -> o .: "card"
-        _              -> mzero
-     return Token {..}
-   parseJSON _ = mzero
+   parseJSON =
+       withObject "token" $ \o -> do
+         tokenId <- TokenId <$> o .: "id"
+         Bool tokenLiveMode <- o .: "livemode"
+         tokenCreated <- fromSeconds <$> o .: "created"
+         Bool tokenUsed <- o .: "used"
+         String tokenObject <- o .: "object"
+         String typ <- o .: "type"
+         tokenType <- pure $ case typ of
+                               "card"         -> TokenCard
+                               "bank_account" -> TokenBankAccount
+                               _ -> error "unspecified type"
+         tokenData <-
+             case typ of
+               "bank_account" -> o .: "bank_account"
+               "card"         -> o .: "card"
+               _              -> mzero
+         return Token {..}
 
 ------------------------------------------------------------------------------
 -- | Generic handling of Stripe JSON arrays
@@ -2550,13 +2537,13 @@ data StripeList a = StripeList {
 ------------------------------------------------------------------------------
 -- | JSON Instance for `StripeList`
 instance FromJSON a => FromJSON (StripeList a) where
-    parseJSON (Object o) =
+    parseJSON =
+      withObject "stripe_list" $ \o ->
         StripeList <$> o .:  "data"
                    <*> o .:  "url"
                    <*> o .:  "object"
                    <*> o .:? "total_count"
                    <*> o .:? "has_more" .!= False
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | Pagination Option for `StripeList`
@@ -2971,29 +2958,29 @@ data BitcoinReceiver = BitcoinReceiver {
 ------------------------------------------------------------------------------
 -- | FromJSON for `BitcoinReceiver`
 instance FromJSON BitcoinReceiver where
-   parseJSON (Object o) =
-     BitcoinReceiver <$> (BitcoinReceiverId <$> o .: "id")
-                     <*> o .: "object"
-                     <*> (fromSeconds <$> o .: "created")
-                     <*> o .: "livemode"
-                     <*> o .: "active"
-                     <*> o .: "amount"
-                     <*> o .: "amount_received"
-                     <*> o .: "bitcoin_amount"
-                     <*> o .: "bitcoin_amount_received"
-                     <*> o .: "bitcoin_uri"
-                     <*> o .: "currency"
-                     <*> o .: "filled"
-                     <*> o .: "inbound_address"
-                     <*> o .: "uncaptured_funds"
-                     <*> o .:? "description"
-                     <*> o .: "email"
-                     <*> o .: "metadata"
-                     <*> o .:? "refund_address"
-                     <*> o .:? "transactions"
-                     <*> (fmap PaymentId <$> o .:? "payment")
-                     <*> (fmap CustomerId <$> o .:? "customer")
-   parseJSON _ = mzero
+   parseJSON =
+     withObject "bitcoin_receiver" $ \o ->
+       BitcoinReceiver <$> (BitcoinReceiverId <$> o .: "id")
+                       <*> o .: "object"
+                       <*> (fromSeconds <$> o .: "created")
+                       <*> o .: "livemode"
+                       <*> o .: "active"
+                       <*> o .: "amount"
+                       <*> o .: "amount_received"
+                       <*> o .: "bitcoin_amount"
+                       <*> o .: "bitcoin_amount_received"
+                       <*> o .: "bitcoin_uri"
+                       <*> o .: "currency"
+                       <*> o .: "filled"
+                       <*> o .: "inbound_address"
+                       <*> o .: "uncaptured_funds"
+                       <*> o .:? "description"
+                       <*> o .: "email"
+                       <*> o .: "metadata"
+                       <*> o .:? "refund_address"
+                       <*> o .:? "transactions"
+                       <*> (fmap PaymentId <$> o .:? "payment")
+                       <*> (fmap CustomerId <$> o .:? "customer")
 
 ------------------------------------------------------------------------------
 -- | Bitcoin Transactions
@@ -3008,13 +2995,13 @@ data Transactions = Transactions {
 ------------------------------------------------------------------------------
 -- | Bitcoin Transactions data
 instance FromJSON Transactions where
-   parseJSON (Object o) =
-     Transactions <$> o .: "object"
-                  <*> o .: "total_count"
-                  <*> o .: "has_more"
-                  <*> o .: "url"
-                  <*> o .: "data"
-   parseJSON _ = mzero
+   parseJSON =
+     withObject "transactions" $ \o ->
+       Transactions <$> o .: "object"
+                    <*> o .: "total_count"
+                    <*> o .: "has_more"
+                    <*> o .: "url"
+                    <*> o .: "data"
 
 ------------------------------------------------------------------------------
 -- | Bitcoin Transaction
@@ -3031,27 +3018,25 @@ data BitcoinTransaction = BitcoinTransaction {
 ------------------------------------------------------------------------------
 -- | FromJSON BitcoinTransaction
 instance FromJSON BitcoinTransaction where
-   parseJSON (Object o) =
-     BitcoinTransaction <$> o .: "id"
-                        <*> o .: "object"
-                        <*> (fromSeconds <$> o .: "created")
-                        <*> o .: "amount"
-                        <*> o .: "bitcoin_amount"
-                        <*> o .: "currency"
-                        <*> o .: "receiver"
-   parseJSON _ = mzero
+   parseJSON =
+     withObject "bitcoin_transaction" $ \o ->
+       BitcoinTransaction <$> o .: "id"
+                          <*> o .: "object"
+                          <*> (fromSeconds <$> o .: "created")
+                          <*> o .: "amount"
+                          <*> o .: "bitcoin_amount"
+                          <*> o .: "currency"
+                          <*> o .: "receiver"
 
 ------------------------------------------------------------------------------
 -- | BitcoinTransactionId
-newtype BitcoinTransactionId =
-    BitcoinTransactionId Text
+newtype BitcoinTransactionId = BitcoinTransactionId Text
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | FromJSON BitcoinTransactionId
 instance FromJSON BitcoinTransactionId where
-   parseJSON (String o) = pure $ BitcoinTransactionId o
-   parseJSON _ = mzero
+    parseJSON = withText "bitcoin transaction id" (pure . BitcoinTransactionId)
 
 ------------------------------------------------------------------------------
 -- | BTC ReceiverId
@@ -3061,8 +3046,7 @@ newtype BitcoinReceiverId = BitcoinReceiverId Text
 ------------------------------------------------------------------------------
 -- | FromJSON for BitcoinReceiverId
 instance FromJSON BitcoinReceiverId where
-   parseJSON (String x) = pure $ BitcoinReceiverId x
-   parseJSON _ = mzero
+    parseJSON = withText "bitcoin receiver id" (pure . BitcoinReceiverId)
 
 ------------------------------------------------------------------------------
 -- | BTC PaymentId
@@ -3072,8 +3056,7 @@ newtype PaymentId = PaymentId Text
 ------------------------------------------------------------------------------
 -- | FromJSON for PaymentId
 instance FromJSON PaymentId where
-   parseJSON (String x) = pure $ PaymentId x
-   parseJSON _ = mzero
+    parseJSON = withText "payment id" (pure . PaymentId)
 
 ------------------------------------------------------------------------------
 -- | Show an amount accounting for zero currencies
