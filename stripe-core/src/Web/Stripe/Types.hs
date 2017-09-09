@@ -2438,8 +2438,22 @@ data Event = Event {
     , eventData            :: EventData
     , eventObject          :: Text
     , eventPendingWebHooks :: Int
-    , eventRequest         :: Maybe Text
+    , eventRequest         :: Maybe EventRequest
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | request identifier object for an `Event`
+data EventRequest = EventRequest {
+      eventRequestId :: Text
+    , eventRequestIdempotencyKey :: Maybe Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for an `EventRequest`
+instance FromJSON EventRequest where
+    parseJSON =
+      withObject "request" $ \o ->
+        EventRequest <$> o .: "id"
+                     <*> o .: "idempotency_key"
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Event`
