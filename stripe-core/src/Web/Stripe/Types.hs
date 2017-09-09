@@ -193,9 +193,12 @@ data Refund = Refund {
     , refundCurrency           :: Currency
     , refundCreated            :: UTCTime
     , refundObject             :: Text
-    , refundCharge             :: ChargeId
+    , refundCharge             :: Expandable ChargeId
     , refundBalanceTransaction :: Expandable TransactionId
     , refundMetaData           :: MetaData
+    , refundReason             :: Maybe RefundReason
+    , refundReceiptNumber      :: Maybe Text
+    , refundStatus             :: RefundStatus
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -211,12 +214,32 @@ instance FromJSON Refund where
                <*> o .: "charge"
                <*> o .: "balance_transaction"
                <*> o .: "metadata"
+               <*> o .: "reason"
+               <*> o .: "receipt_number"
+               <*> o .: "status"
 
 ------------------------------------------------------------------------------
 -- | `RefundApplicationFee`
 newtype RefundApplicationFee =
   RefundApplicationFee { getRefundApplicationFee :: Bool }
   deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | status for a `Refund`
+data RefundStatus
+    = RefundSucceeded
+    | RefundPending
+    | RefundFailed
+    | RefundCancelled
+      deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `RefundStatus`
+instance FromJSON RefundStatus where
+    parseJSON (String "succeeded") = pure RefundSucceeded
+    parseJSON (String "pending") = pure RefundPending
+    parseJSON (String "failed") = pure RefundFailed
+    parseJSON (String "cancelled") = pure RefundCancelled
+    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | `RefundReason`
@@ -226,10 +249,16 @@ data RefundReason
   | RefundRequestedByCustomer
   deriving (Read, Show, Eq, Ord, Data, Typeable)
 
+-- | JSON instance for `RefundReason`
+instance FromJSON RefundReason where
+    parseJSON (String "duplicate") = pure RefundDuplicate
+    parseJSON (String "fraudulent") = pure RefundFraudulent
+    parseJSON (String "requested_by_customer") = pure RefundRequestedByCustomer
+    parseJSON _ = mzero
+
 ------------------------------------------------------------------------------
 -- | `CustomerId` for a `Customer`
-newtype CustomerId
-  = CustomerId Text
+newtype CustomerId = CustomerId Text
   deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -757,8 +786,7 @@ instance FromJSON Discount where
 
 ------------------------------------------------------------------------------
 -- | `Invoice` for a `Coupon`
-newtype InvoiceId =
-    InvoiceId Text
+newtype InvoiceId = InvoiceId Text
   deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
@@ -1630,10 +1658,10 @@ data Source = Source {
     , sourceFlow                :: SourceAuthFlow
     , sourceLiveMode            :: Bool
     , sourceMetaData            :: MetaData
---    , sourceOwner               :: SourceOwner
+    , sourceOwner               :: SourceOwner
     , sourceStatementDescriptor :: Maybe Text
     , sourceStatus              :: SourceStatus
-    , sourceType                :: SourceType
+    , sourceValue               :: SourceValue
     , sourceUsage               :: SourceUsage
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
@@ -1647,10 +1675,25 @@ instance FromJSON Source where
       sourceCurrency <- o .: "currency"
       sourceLiveMode <- o .: "livemode"
       sourceMetaData <- o .: "metadata"
+      sourceOwner <- o .: "owner"
       sourceStatementDescriptor <- o .:? "statement_descriptor"
       sourceStatus <- o .: "status"
       sourceUsage <- o .: "usage"
-      sourceType <- o .: "type" --FIXME
+
+      String valType <- o .: "type"
+      sourceValue <-
+          case valType of
+            "card" -> pure SourceValueCard
+            "three_d_secure" -> pure SourceValueThreeDSecure
+            "giropay" -> pure SourceValueGiropay
+            "sepa_debit" -> pure SourceValueSepaDebit
+            "ideal" -> pure SourceValueIdeal
+            "sofort" -> pure SourceValueSofort
+            "bancontact" -> pure SourceValueBancontact
+            "alipay" -> pure SourceValueAlipay
+            "bitcoin" -> SourceValueBitcoin <$> o .: "bitcoin"
+            "p24" -> pure SourceValueP24
+
       String flow <- o .: "flow"
       sourceFlow <-
           case flow of
@@ -1671,33 +1714,67 @@ instance FromJSON SourceId where
     parseJSON = withText "source id" (pure . SourceId)
 
 ------------------------------------------------------------------------------
+-- | Owner for a `Source` object
+data SourceOwner = SourceOwner {
+      ownerAddress :: Maybe Text
+    , ownerEmail :: Maybe Text
+    , ownerName :: Maybe Text
+    , ownerPhone :: Maybe Text
+    , ownerVerifiedAddress :: Maybe Text
+    , ownerVerifiedEmail :: Maybe Text
+    , ownerVerifiedName :: Maybe Text
+    , ownerVerifiedPhone :: Maybe Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for an `Owner`
+instance FromJSON SourceOwner where
+    parseJSON =
+      withObject "owner" $ \o ->
+        SourceOwner <$> o .: "address"
+                    <*> o .: "email"
+                    <*> o .: "name"
+                    <*> o .: "phone"
+                    <*> o .: "verified_address"
+                    <*> o .: "verified_email"
+                    <*> o .: "verified_name"
+                    <*> o .: "verified_phone"
+
+------------------------------------------------------------------------------
 -- | type for a `Source` object
-data SourceType
-  = SourceCard
-  | SourceThreeDSecure
-  | SourceGiropay
-  | SourceSepaDebit
-  | SourceIdeal
-  | SourceSofort
-  | SourceBancontact
-  | SourceAlipay
-  | SourceBitcoin
-  | SourceP24
+data SourceValue
+  = SourceValueCard
+  | SourceValueThreeDSecure
+  | SourceValueGiropay
+  | SourceValueSepaDebit
+  | SourceValueIdeal
+  | SourceValueSofort
+  | SourceValueBancontact
+  | SourceValueAlipay
+  | SourceValueBitcoin SourceBitcoin
+  | SourceValueP24
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
--- | JSON instance for `SourceType`
-instance FromJSON SourceType where
-    parseJSON (String "card") = pure SourceCard
-    parseJSON (String "three_d_secure") = pure SourceThreeDSecure
-    parseJSON (String "giropay") = pure SourceGiropay
-    parseJSON (String "sepa_debit") = pure SourceSepaDebit
-    parseJSON (String "ideal") = pure SourceIdeal
-    parseJSON (String "sofort") = pure SourceSofort
-    parseJSON (String "bancontact") = pure SourceBancontact
-    parseJSON (String "alipay") = pure SourceAlipay
-    parseJSON (String "bitcoin") = pure SourceBitcoin
-    parseJSON (String "p24") = pure SourceP24
-    parseJSON _ = mzero
+------------------------------------------------------------------------------
+-- | bitcoin `Source` data
+data SourceBitcoin = SourceBitcoin {
+      sourceBitcoinAddress :: Text
+    , sourceBitcoinAmount :: Int
+    , sourceBitcoinAmountCharged :: Int
+    , sourceBitcoinAmountReceived :: Int
+    , sourceBitcoinAmountReturned :: Int
+    , sourceBitcoinUri :: Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+-- | JSON instance for a `SourceBitcoin`
+instance FromJSON SourceBitcoin where
+    parseJSON =
+      withObject "bitcoin" $ \o ->
+        SourceBitcoin <$> o .: "address"
+                      <*> o .: "amount"
+                      <*> o .: "amount_charged"
+                      <*> o .: "amount_received"
+                      <*> o .: "amount_returned"
+                      <*> o .: "uri"
 
 ------------------------------------------------------------------------------
 -- | receiver for a `Source` object
@@ -2339,7 +2416,6 @@ data EventData =
   | RefundEvent Refund
   | DisputeEvent Dispute
   | CustomerEvent Customer
-  | CardEvent Card
   | SubscriptionEvent Subscription
   | SourceEvent Source
   | OrderEvent Order
@@ -2401,9 +2477,6 @@ instance FromJSON Event where
         "customer.created" -> CustomerEvent <$> obj .: "object"
         "customer.updated" -> CustomerEvent <$> obj .: "object"
         "customer.deleted" -> CustomerEvent <$> obj .: "object"
-        "customer.card.created" -> CardEvent <$> obj .: "object"
-        "customer.card.updated" -> CardEvent <$> obj .: "object"
-        "customer.card.deleted" -> CardEvent <$> obj .: "object"
         "customer.source.created" -> SourceEvent <$> obj .: "object"
         "customer.source.deleted" -> SourceEvent <$> obj .: "object"
         "customer.source.updated" -> SourceEvent <$> obj .: "object"
