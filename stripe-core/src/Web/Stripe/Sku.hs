@@ -113,6 +113,7 @@ getSkus = request
 
 data GetSkus
 type instance StripeReturn GetSkus = (StripeList Sku)
+instance StripeHasParam GetSkus SkuActive
 instance StripeHasParam GetSkus (EndingBefore SkuId)
 instance StripeHasParam GetSkus Limit
 instance StripeHasParam GetSkus (StartingAfter SkuId)

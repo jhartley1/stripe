@@ -75,6 +75,7 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      RoutingNumber(..), StartingAfter(..),
                                      StatementDescriptor(..), BalanceSource(..),
                                      SubscriptionId(..), SkuAttributes(..),
+                                     SubscriptionStatus(..),
                                      SkuId(..), SkuPrice(..), SkuActive(..),
                                      SkuImage(..),
                                      TaxPercent(..), TimeRange(..),
@@ -458,6 +459,15 @@ instance ToStripeParam SubscriptionId where
   toStripeParam (SubscriptionId sid) =
     (("subscription", Text.encodeUtf8 sid) :)
 
+instance ToStripeParam SubscriptionStatus where
+  toStripeParam status =
+    (("status", case status of
+                  Trialing -> "trialing"
+                  Active -> "active"
+                  PastDue -> "past_due"
+                  UnPaid -> "unpaid"
+                  Canceled -> "canceled") :)
+
 instance ToStripeParam TaxPercent where
   toStripeParam (TaxPercent tax) =
     (("tax_percent", fromString $ showFFloat (Just 2) tax "") :)
@@ -535,7 +545,15 @@ instance ToStripeParam TransactionType where
                                    -> "application_fee_refund"
                 TransferTxn        -> "transfer"
                 TransferCancelTxn  -> "transfer_cancel"
-                TransferFailureTxn -> "transfer_failure") :)
+                TransferFailureTxn -> "transfer_failure"
+                PaymentTxn         -> "payment"
+                PaymentFailureRefundTxn -> "payment_failure_refund"
+                PaymentRefundTxn   -> "payment_refund"
+                TransferRefundTxn  -> "transfer_refund"
+                PayoutTxn          -> "payout"
+                PayoutCancelTxn    -> "payout_cancel"
+                PayoutFailureTxn   -> "payout_failure"
+                ValidationTxn      -> "validation") :)
 
 
 instance (ToStripeParam param) => ToStripeParam (StartingAfter param) where

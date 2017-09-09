@@ -84,9 +84,9 @@ import           Web.Stripe.Types           (ApplicationFeePercent(..),
                                              CouponId(..), EndingBefore(..),
                                              ExpandParams(..), Limit(..), MetaData(..),
                                              PlanId (..), Prorate(..), Quantity(..),
-                                             StartingAfter(..),
+                                             StartingAfter(..), Created(..),
                                              Subscription (..), StripeList(..),
-                                             SubscriptionId (..),
+                                             SubscriptionId (..), TimeRange(..),
                                              SubscriptionStatus (..), TaxPercent(..), 
                                              TrialEnd(..))
 import           Web.Stripe.Types.Util      (getCustomerId)
@@ -192,6 +192,10 @@ getSubscriptions
 data GetSubscriptions
 type instance StripeReturn GetSubscriptions = StripeList Subscription
 instance StripeHasParam GetSubscriptions ExpandParams
+instance StripeHasParam GetSubscriptions Created
+instance StripeHasParam GetSubscriptions (TimeRange Created)
 instance StripeHasParam GetSubscriptions (EndingBefore SubscriptionId)
 instance StripeHasParam GetSubscriptions Limit
 instance StripeHasParam GetSubscriptions (StartingAfter SubscriptionId)
+instance StripeHasParam GetSubscriptions SubscriptionStatus
+instance StripeHasParam GetSubscriptions PlanId

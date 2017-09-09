@@ -2208,6 +2208,14 @@ data TransactionType
   | TransferTxn
   | TransferCancelTxn
   | TransferFailureTxn
+  | PaymentTxn
+  | PaymentFailureRefundTxn
+  | PaymentRefundTxn
+  | TransferRefundTxn
+  | PayoutTxn
+  | PayoutCancelTxn
+  | PayoutFailureTxn
+  | ValidationTxn
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 instance FromJSON TransactionType where
@@ -2219,6 +2227,14 @@ instance FromJSON TransactionType where
   parseJSON (String "transfer")         = pure TransferTxn
   parseJSON (String "transfer_cancel")  = pure TransferCancelTxn
   parseJSON (String "transfer_failure") = pure TransferFailureTxn
+  parseJSON (String "payment")          = pure PaymentTxn
+  parseJSON (String "payment_failure_refund") = pure PaymentFailureRefundTxn
+  parseJSON (String "payment_refund")   = pure PaymentRefundTxn
+  parseJSON (String "transfer_refund")  = pure TransferRefundTxn
+  parseJSON (String "payout")           = pure PayoutTxn
+  parseJSON (String "payout_cancel")    = pure PayoutCancelTxn
+  parseJSON (String "payout_failure")   = pure PayoutFailureTxn
+  parseJSON (String "validation")       = pure ValidationTxn
   parseJSON _                           = mzero
 
 instance ToJSON TransactionType where
@@ -2230,6 +2246,14 @@ instance ToJSON TransactionType where
   toJSON TransferTxn        = String "transfer"
   toJSON TransferCancelTxn  = String "transfer_cancel"
   toJSON TransferFailureTxn = String "transfer_failure"
+  toJSON PaymentTxn         = String "payment"
+  toJSON PaymentFailureRefundTxn = String "payment_failure_refund"
+  toJSON PaymentRefundTxn   = String "payment_refund"
+  toJSON TransferRefundTxn  = String "transfer_refund"
+  toJSON PayoutTxn          = String "payout"
+  toJSON PayoutCancelTxn    = String "payout_cancel"
+  toJSON PayoutFailureTxn   = String "payout_failure"
+  toJSON ValidationTxn      = String "validation"
 
 ------------------------------------------------------------------------------
 -- | `Event` Types

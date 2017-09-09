@@ -113,5 +113,4 @@ instance StripeHasParam GetBalanceTransactionHistory (EndingBefore TransactionId
 instance StripeHasParam GetBalanceTransactionHistory Limit
 instance StripeHasParam GetBalanceTransactionHistory (StartingAfter TransactionId)
 instance (ToStripeParam a) => StripeHasParam GetBalanceTransactionHistory (BalanceSource a)
-instance StripeHasParam GetBalanceTransactionHistory TransferId
 instance StripeHasParam GetBalanceTransactionHistory TransactionType

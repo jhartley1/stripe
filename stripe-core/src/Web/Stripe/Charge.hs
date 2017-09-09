@@ -87,7 +87,7 @@ import           Web.Stripe.StripeRequest   (Method (GET, POST),
                                              mkStripeRequest)
 import           Web.Stripe.Util            ((</>))
 import           Web.Stripe.Types           (Amount(..), ApplicationFeeAmount(..),
-                                             CVC (..),
+                                             CVC (..), TimeRange(..),
                                              Capture(..),
                                              CardNumber (..), Charge (..),
                                              ChargeId (..), Created(..),
@@ -161,6 +161,7 @@ data UpdateCharge
 type instance StripeReturn UpdateCharge = Charge
 instance StripeHasParam UpdateCharge Description
 instance StripeHasParam UpdateCharge MetaData
+instance StripeHasParam UpdateCharge ReceiptEmail
 
 ------------------------------------------------------------------------------
 -- | a `Charge` to be captured
@@ -191,6 +192,7 @@ data GetCharges
 type instance StripeReturn GetCharges = StripeList Charge
 instance StripeHasParam GetCharges ExpandParams
 instance StripeHasParam GetCharges Created
+instance StripeHasParam GetCharges (TimeRange Created)
 instance StripeHasParam GetCharges CustomerId
 instance StripeHasParam GetCharges (EndingBefore ChargeId)
 instance StripeHasParam GetCharges Limit

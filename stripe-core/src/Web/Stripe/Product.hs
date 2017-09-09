@@ -111,6 +111,7 @@ getProducts = request
 
 data GetProducts
 type instance StripeReturn GetProducts = (StripeList Product)
+instance StripeHasParam GetProducts ProductActive
 instance StripeHasParam GetProducts (EndingBefore ProductId)
 instance StripeHasParam GetProducts Limit
 instance StripeHasParam GetProducts (StartingAfter ProductId)
