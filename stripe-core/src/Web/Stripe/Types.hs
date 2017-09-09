@@ -108,8 +108,7 @@ newtype ChargeId
 ------------------------------------------------------------------------------
 -- | JSON Instance for `ChargeId`
 instance FromJSON ChargeId where
-   parseJSON (String x)   = pure $ ChargeId x
-   parseJSON _ = mzero
+    parseJSON = fmap ChargeId . parseJSON
 
 ------------------------------------------------------------------------------
 -- | `StatementDescriptor` to be added to a `Charge`
@@ -236,8 +235,7 @@ newtype CustomerId
 ------------------------------------------------------------------------------
 -- | JSON Instance for `CustomerId`
 instance FromJSON CustomerId where
-    parseJSON (String x)   = pure (CustomerId x)
-    parseJSON _            = mzero
+    parseJSON = fmap CustomerId . parseJSON
 
 ------------------------------------------------------------------------------
 -- | `Customer` object
@@ -280,7 +278,7 @@ instance FromJSON Customer where
            <*> o .:? "currency"
            <*> o .:? "default_source"
            <*> o .: "metadata"
-           <|> DeletedCustomer
+           <|> DeletedCustomer -- FIXME
            <$> o .: "deleted"
            <*> (CustomerId <$> o .: "id"))
            <|> DeletedCustomer
@@ -301,8 +299,7 @@ newtype CardId = CardId Text
 ------------------------------------------------------------------------------
 -- | JSON Instance for `CardId`
 instance FromJSON CardId where
-   parseJSON (String x)   = pure $ CardId x
-   parseJSON _ = mzero
+    parseJSON = fmap CardId . parseJSON
 
 ------------------------------------------------------------------------------
 -- | Number associated with a `Card`
@@ -474,8 +471,7 @@ newtype SubscriptionId = SubscriptionId { getSubscriptionId :: Text }
 ------------------------------------------------------------------------------
 -- | JSON Instance for `SubscriptionId`
 instance FromJSON SubscriptionId where
-    parseJSON (String x)   = pure (SubscriptionId x)
-    parseJSON _            = mzero
+    parseJSON = fmap SubscriptionId . parseJSON
 
 ------------------------------------------------------------------------------
 -- | Subscription Object
@@ -547,7 +543,6 @@ instance FromJSON SubscriptionStatus where
 ------------------------------------------------------------------------------
 -- | `TaxPercent` for a `Subscription`
 newtype TaxPercent = TaxPercent Double deriving (Read, Show, Eq, Ord, Data, Typeable)
-
 
 ------------------------------------------------------------------------------
 -- | `PlanId` for a `Plan`
@@ -769,8 +764,7 @@ newtype InvoiceId =
 ------------------------------------------------------------------------------
 -- | JSON Instance for `InvoiceId`
 instance FromJSON InvoiceId where
-   parseJSON (String x)   = pure $ InvoiceId x
-   parseJSON _ = mzero
+    parseJSON = fmap InvoiceId . parseJSON
 
 ------------------------------------------------------------------------------
 -- | `Invoice` Object
@@ -1061,8 +1055,7 @@ newtype DisputeId =
 
 -- | JSON instance for `DisputeId`
 instance FromJSON DisputeId where
-    parseJSON (String t) = pure $ DisputeId t
-    parseJSON _ = mzero
+    parseJSON = fmap DisputeId . parseJSON
 
 ------------------------------------------------------------------------------
 -- | `DisputeEvidence` associated with a `Dispute`
@@ -1221,21 +1214,20 @@ instance FromJSON TransferType where
 -- | `Transfer` Object
 data Transfer = Transfer {
       transferId                   :: TransferId
-     , transferObject               :: Text
-     , transferCreated              :: UTCTime
-     , transferDate                 :: UTCTime
-     , transferLiveMode             :: Bool
-     , transferAmount               :: Int
-     , transferCurrency             :: Currency
-     , transferType                 :: TransferType
-     , transferBalanceTransaction   :: Expandable TransactionId
-     , transferDescription          :: Maybe Description
-     , transferBankAccount          :: Maybe BankAccount
-     , transferFailureMessage       :: Maybe Text
-     , transferFailureCode          :: Maybe Text
-     , transferStatementDescriptor  :: Maybe StatementDescriptor
-     , transferMetaData             :: MetaData
-} deriving (Read, Show, Eq, Ord, Data, Typeable)
+    , transferObject               :: Text
+    , transferCreated              :: UTCTime
+    , transferLiveMode             :: Bool
+    , transferAmount               :: Int
+    , transferCurrency             :: Currency
+    , transferType                 :: TransferType
+    , transferBalanceTransaction   :: Expandable TransactionId
+    , transferDescription          :: Maybe Description
+    , transferBankAccount          :: Maybe BankAccount
+    , transferFailureMessage       :: Maybe Text
+    , transferFailureCode          :: Maybe Text
+    , transferStatementDescriptor  :: Maybe StatementDescriptor
+    , transferMetaData             :: MetaData
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Transfer`
@@ -1244,7 +1236,6 @@ instance FromJSON Transfer where
         Transfer <$> (TransferId <$> o .: "id")
                     <*> o .: "object"
                     <*> (fromSeconds <$> o .: "created")
-                    <*> (fromSeconds <$> o .: "date")
                     <*> o .: "livemode"
                     <*> o .: "amount"
                     <*> o .: "currency"
@@ -1642,15 +1633,12 @@ data Source = Source {
       sourceId                  :: SourceId
     , sourceAmount              :: Maybe Int
     , sourceClientSecret        :: Text
-    , sourceCodeVerification    :: SourceCodeVerification
     , sourceCreated             :: UTCTime
     , sourceCurrency            :: Currency
-    , sourceFlow                :: SourceFlow
+    , sourceFlow                :: SourceAuthFlow
     , sourceLiveMode            :: Bool
     , sourceMetaData            :: MetaData
 --    , sourceOwner               :: SourceOwner
-    , sourceReceiver            :: Maybe SourceReceiver
-    , sourceRedirect            :: Maybe SourceRedirect
     , sourceStatementDescriptor :: Maybe Text
     , sourceStatus              :: SourceStatus
     , sourceType                :: SourceType
@@ -1659,22 +1647,27 @@ data Source = Source {
 
 -- | JSON instance for `Source`
 instance FromJSON Source where
-    parseJSON (Object o) =
-        Source <$> o .: "id"
-               <*> o .:? "amount"
-               <*> o .: "client_secret"
-               <*> o .: "code_verification"
-               <*> fmap fromSeconds (o .: "created")
-               <*> o .: "currency"
-               <*> o .: "flow"
-               <*> o .: "livemode"
-               <*> o .: "metadata"
-               <*> o .:? "receiver"
-               <*> o .:? "redirect"
-               <*> o .:? "statement_descriptor"
-               <*> o .: "status"
-               <*> o .: "type"
-               <*> o .: "usage"
+    parseJSON (Object o) = do
+      sourceId <- o .: "id"
+      sourceAmount <- o .:? "amount"
+      sourceClientSecret <- o .: "client_secret"
+      sourceCreated <- fmap fromSeconds (o .: "created")
+      sourceCurrency <- o .: "currency"
+      sourceLiveMode <- o .: "livemode"
+      sourceMetaData <- o .: "metadata"
+      sourceStatementDescriptor <- o .:? "statement_descriptor"
+      sourceStatus <- o .: "status"
+      sourceUsage <- o .: "usage"
+      sourceType <- o .: "type" --FIXME
+      String flow <- o .: "flow"
+      sourceFlow <-
+          case flow of
+            "redirect" -> SourceAuthFlowRedirect <$> o .: "redirect"
+            "receiver" -> SourceAuthFlowReceiver <$> o .: "receiver"
+            "code_verification" ->
+                SourceAuthFlowCodeVerification <$> o .: "code_verification"
+            "none" -> pure SourceAuthFlowNone
+      return Source{..}
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
@@ -1714,67 +1707,59 @@ instance FromJSON SourceType where
 
 ------------------------------------------------------------------------------
 -- | receiver for a `Source` object
-data SourceReceiver = SourceReceiver {
-      sourceReceiverAddress        :: Text
-    , sourceReceiverAmountCharged  :: Int
-    , sourceReceiverAmountReceived :: Int
-    , sourceReceiverAmountReturned :: Int
+data SourceFlowReceiver = SourceFlowReceiver {
+      sourceFlowReceiverAddress        :: Text
+    , sourceFlowReceiverAmountCharged  :: Int
+    , sourceFlowReceiverAmountReceived :: Int
+    , sourceFlowReceiverAmountReturned :: Int
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
--- | JSON instance for `SourceReceiver`
-instance FromJSON SourceReceiver where
+-- | JSON instance for `SourceFlowReceiver`
+instance FromJSON SourceFlowReceiver where
     parseJSON (Object o) =
-        SourceReceiver <$> o .: "address"
-                       <*> o .: "amount_charged"
-                       <*> o .: "amount_received"
-                       <*> o .: "amount_returned"
+        SourceFlowReceiver <$> o .: "address"
+                           <*> o .: "amount_charged"
+                           <*> o .: "amount_received"
+                           <*> o .: "amount_returned"
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | flow for a `Source` object
-data SourceFlow
-  = SourceFlowRedirect
-  | SourceFlowReceiver
-  | SourceFlowCodeVerification
-  | SourceFlowNone
+data SourceAuthFlow
+  = SourceAuthFlowRedirect SourceFlowRedirect
+  | SourceAuthFlowReceiver SourceFlowReceiver
+  | SourceAuthFlowCodeVerification SourceFlowCodeVerification
+  | SourceAuthFlowNone
     deriving (Read, Show, Eq, Ord, Data, Typeable)
-
--- | JSON instance for `SourceFlow`
-instance FromJSON SourceFlow where
-    parseJSON (String "redirect") = pure SourceFlowRedirect
-    parseJSON (String "receiver") = pure SourceFlowReceiver
-    parseJSON (String "code_verification") = pure SourceFlowCodeVerification
-    parseJSON (String "none") = pure SourceFlowNone
-    parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | code_verification object for a `Source` object
-data SourceCodeVerification = SourceCodeVerification {
-      sourceCodeVerificationAttemptsRemaining :: Int
-    , sourceCodeVerificationStatus :: Text
+data SourceFlowCodeVerification = SourceFlowCodeVerification {
+      sourceFlowCodeVerificationAttemptsRemaining :: Int
+    , sourceFlowCodeVerificationStatus :: Text
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 -- | JSON instance for a `SourceCodeVerification`
-instance FromJSON SourceCodeVerification where
+instance FromJSON SourceFlowCodeVerification where
     parseJSON (Object o) =
-        SourceCodeVerification <$> o .: "attempts_remaining"
-                               <*> o .: "status"
+        SourceFlowCodeVerification <$> o .: "attempts_remaining"
+                                   <*> o .: "status"
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
 -- | redirect for a `Source` object
-data SourceRedirect = SourceRedirect {
-      sourceRedirectReturnURL :: Text
-    , sourceRedirectStatus    :: Text
-    , sourceRedirectURL       :: Text
+data SourceFlowRedirect = SourceFlowRedirect {
+      sourceFlowRedirectReturnURL :: Text
+    , sourceFlowRedirectStatus    :: Text
+    , sourceFlowRedirectURL       :: Text
     } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
--- | JSON instance for a `SourceRedirect`
-instance FromJSON SourceRedirect where
+-- | JSON instance for a `SourceFlowRedirect`
+instance FromJSON SourceFlowRedirect where
     parseJSON (Object o) =
-        SourceRedirect <$> o .: "return_url"
-                       <*> o .: "status"
-                       <*> o .: "url"
+        SourceFlowRedirect <$> o .: "return_url"
+                           <*> o .: "status"
+                           <*> o .: "url"
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
@@ -2408,6 +2393,7 @@ instance FromJSON Event where
         "bitcoin.receiver.created" -> BitcoinReceiverEvent <$> obj .: "object"
         "bitcoin.receiver.filled" -> BitcoinReceiverEvent <$> obj .: "object"
         "bitcoin.receiver.updated" -> BitcoinReceiverEvent <$> obj .: "object"
+        "bitcoin.receiver.transaction.created" -> BitcoinReceiverEvent <$> obj .: "object"
         "charge.succeeded" -> ChargeEvent <$> obj .: "object"
         "charge.failed" -> ChargeEvent <$> obj .: "object"
         "charge.refunded" -> ChargeEvent <$> obj .: "object"
@@ -2426,6 +2412,9 @@ instance FromJSON Event where
         "customer.card.created" -> CardEvent <$> obj .: "object"
         "customer.card.updated" -> CardEvent <$> obj .: "object"
         "customer.card.deleted" -> CardEvent <$> obj .: "object"
+        "customer.source.created" -> SourceEvent <$> obj .: "object"
+        "customer.source.deleted" -> SourceEvent <$> obj .: "object"
+        "customer.source.updated" -> SourceEvent <$> obj .: "object"
         "customer.subscription.created" -> SubscriptionEvent <$> obj .: "object"
         "customer.subscription.updated" -> SubscriptionEvent <$> obj .: "object"
         "customer.subscription.deleted" -> SubscriptionEvent <$> obj .: "object"
