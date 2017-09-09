@@ -1681,6 +1681,8 @@ data SourceType
   | SourceSofort
   | SourceBancontact
   | SourceAlipay
+  | SourceBitcoin
+  | SourceP24
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 -- | JSON instance for `SourceType`
@@ -1693,6 +1695,8 @@ instance FromJSON SourceType where
     parseJSON (String "sofort") = pure SourceSofort
     parseJSON (String "bancontact") = pure SourceBancontact
     parseJSON (String "alipay") = pure SourceAlipay
+    parseJSON (String "bitcoin") = pure SourceBitcoin
+    parseJSON (String "p24") = pure SourceP24
     parseJSON _ = mzero
 
 ------------------------------------------------------------------------------
