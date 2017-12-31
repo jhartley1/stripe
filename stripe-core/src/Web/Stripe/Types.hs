@@ -1730,14 +1730,14 @@ data SourceOwner = SourceOwner {
 instance FromJSON SourceOwner where
     parseJSON =
       withObject "owner" $ \o ->
-        SourceOwner <$> o .: "address"
-                    <*> o .: "email"
-                    <*> o .: "name"
-                    <*> o .: "phone"
-                    <*> o .: "verified_address"
-                    <*> o .: "verified_email"
-                    <*> o .: "verified_name"
-                    <*> o .: "verified_phone"
+        SourceOwner <$> o .:? "address"
+                    <*> o .:? "email"
+                    <*> o .:? "name"
+                    <*> o .:? "phone"
+                    <*> o .:? "verified_address"
+                    <*> o .:? "verified_email"
+                    <*> o .:? "verified_name"
+                    <*> o .:? "verified_phone"
 
 ------------------------------------------------------------------------------
 -- | type for a `Source` object
