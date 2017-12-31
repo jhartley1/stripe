@@ -2441,6 +2441,7 @@ data EventData =
   | DisputeEvent Dispute
   | CustomerEvent Customer
   | SubscriptionEvent Subscription
+  | CustomerSourceEvent (Either Card BankAccount)
   | SourceEvent Source
   | OrderEvent Order
   | ProductEvent Product
@@ -2515,7 +2516,13 @@ instance FromJSON Event where
         "customer.created" -> CustomerEvent <$> obj .: "object"
         "customer.updated" -> CustomerEvent <$> obj .: "object"
         "customer.deleted" -> CustomerEvent <$> obj .: "object"
-        "customer.source.created" -> SourceEvent <$> obj .: "object"
+        "customer.source.created" -> do
+                            rawObj <- obj .: "object"
+                            case H.lookup "object" (rawObj :: H.HashMap String Value) of
+                              Nothing -> pure UnknownEventData
+                              Just (String "card") -> CustomerSourceEvent <$> Left <$> obj .: "object"
+                              Just (String "bank_account") -> CustomerSourceEvent <$> Right <$> obj .: "object"
+                              Just _ -> pure UnknownEventData
         "customer.source.deleted" -> SourceEvent <$> obj .: "object"
         "customer.source.updated" -> SourceEvent <$> obj .: "object"
         "customer.subscription.created" -> SubscriptionEvent <$> obj .: "object"
