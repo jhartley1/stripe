@@ -1654,7 +1654,7 @@ data Source = Source {
     , sourceAmount              :: Maybe Int
     , sourceClientSecret        :: Text
     , sourceCreated             :: UTCTime
-    , sourceCurrency            :: Currency
+    , sourceCurrency            :: Maybe Currency
     , sourceFlow                :: SourceAuthFlow
     , sourceLiveMode            :: Bool
     , sourceMetaData            :: MetaData
@@ -1672,7 +1672,7 @@ instance FromJSON Source where
       sourceAmount <- o .:? "amount"
       sourceClientSecret <- o .: "client_secret"
       sourceCreated <- fmap fromSeconds (o .: "created")
-      sourceCurrency <- o .: "currency"
+      sourceCurrency <- o .:? "currency"
       sourceLiveMode <- o .: "livemode"
       sourceMetaData <- o .: "metadata"
       sourceOwner <- o .: "owner"
