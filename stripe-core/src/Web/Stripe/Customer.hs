@@ -66,6 +66,7 @@ module Web.Stripe.Customer
     , StartingAfter      (..)
     , StripeDeleteResult (..)
     , StripeList         (..)
+    , SourceId           (..)
     , TokenId            (..)
     , TrialEnd           (..)
     ) where
@@ -85,6 +86,7 @@ import           Web.Stripe.Types           (AccountBalance(..), CVC (..),
                                              mkNewCard, NewCard(..), StartingAfter(..),
                                              StripeDeleteResult (..),
                                              StripeList (..), TokenId (..),
+                                             SourceId(..),
                                              TrialEnd(..), ExpandParams(..))
 import           Web.Stripe.Types.Util
 
@@ -101,6 +103,7 @@ type instance StripeReturn CreateCustomer = Customer
 instance StripeHasParam CreateCustomer AccountBalance
 instance StripeHasParam CreateCustomer NewCard
 instance StripeHasParam CreateCustomer TokenId
+instance StripeHasParam CreateCustomer SourceId
 instance StripeHasParam CreateCustomer CouponId
 instance StripeHasParam CreateCustomer Description
 instance StripeHasParam CreateCustomer Email

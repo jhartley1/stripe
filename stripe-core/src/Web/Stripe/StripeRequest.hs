@@ -74,6 +74,7 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      RefundApplicationFee(..), RefundReason(..),
                                      RoutingNumber(..), StartingAfter(..),
                                      StatementDescriptor(..), BalanceSource(..),
+                                     SourceId(..),
                                      SubscriptionId(..), SkuAttributes(..),
                                      SubscriptionStatus(..),
                                      SkuId(..), SkuPrice(..), SkuActive(..),
@@ -454,6 +455,10 @@ instance ToStripeParam a => ToStripeParam (BalanceSource a) where
     case toStripeParam param [] of
       [(_, p)] -> (("source", p) :)
       _        -> error "source applied to non-singleton"
+
+instance ToStripeParam SourceId where
+  toStripeParam (SourceId sid) =
+    (("source", Text.encodeUtf8 sid) :)
 
 instance ToStripeParam SubscriptionId where
   toStripeParam (SubscriptionId sid) =
