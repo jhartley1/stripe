@@ -1279,7 +1279,7 @@ instance FromJSON Transfer where
 data BankAccount = BankAccount {
       bankAccountId                 :: BankAccountId
     , bankAccountObject             :: Text
-    , bankAccountAccount            :: Text
+    , bankAccountAccount            :: Maybe Text
     , bankAccountHolderName         :: Text
     , bankAccountHolderType         :: BankAccountHolderType
     , bankAccountBankName           :: Text
@@ -1301,7 +1301,7 @@ instance FromJSON BankAccount where
      withObject "bank_account" $ \o ->
        BankAccount <$> (BankAccountId <$> o .: "id")
                    <*> o .: "object"
-                   <*> o .: "account"
+                   <*> o .:? "account"
                    <*> o .: "account_holder_name"
                    <*> o .: "account_holder_type"
                    <*> o .: "bank_name"
