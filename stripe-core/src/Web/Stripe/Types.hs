@@ -1286,7 +1286,7 @@ data BankAccount = BankAccount {
     , bankAccountCountry            :: Country
     , bankAccountCurrency           :: Currency
     , bankAccountCustomer           :: Text
-    , bankAccountDefaultForCurrency :: Bool
+    , bankAccountDefaultForCurrency :: MaybeBool
     , bankAccountFingerprint        :: Text
     , bankAccountLast4              :: Text
     , bankAccountMetaData           :: MetaData
@@ -1308,7 +1308,7 @@ instance FromJSON BankAccount where
                    <*> (Country <$> o .: "country")
                    <*> o .: "currency"
                    <*> o .: "customer"
-                   <*> o .: "default_for_currency"
+                   <*> o .:? "default_for_currency"
                    <*> o .: "fingerprint"
                    <*> o .: "last4"
                    <*> o .: "metadata"
