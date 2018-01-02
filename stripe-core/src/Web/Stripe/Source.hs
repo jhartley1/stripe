@@ -6,6 +6,8 @@ module Web.Stripe.Source
     ( -- * API
       customerAttachSource
     , CustomerAttachSource
+    , getCustomerSources
+    , GetCustomerSources
       -- * Types
     , Source (..)
     , SourceId (..)
@@ -28,7 +30,8 @@ import           Web.Stripe.Types         ( Source (..)
                                           , SourceStatus (..)
                                           , SourceOwner (..)
                                           , SourceAuthFlow (..)
-                                          , CustomerId (..))
+                                          , CustomerId (..)
+                                          , StripeList (..))
 import           Web.Stripe.Types.Util    (getCustomerId)
 
 customerAttachSource :: CustomerId
@@ -43,3 +46,16 @@ customerAttachSource
 
 data CustomerAttachSource
 type instance StripeReturn CustomerAttachSource = Source
+
+------------------------------------------------------------------------------
+-- | Retrieve all sources associated with a `Customer`
+getCustomerSources
+    :: CustomerId
+    -> StripeRequest GetCustomerSources
+getCustomerSources customerId = request
+    where request = mkStripeRequest GET url params
+          url     = "customers" </> (getCustomerId customerId) </> "sources"
+          params  = []
+
+data GetCustomerSources
+type instance StripeReturn GetCustomerSources = (StripeList Source)
