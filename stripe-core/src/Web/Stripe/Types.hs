@@ -279,7 +279,7 @@ data Customer = Customer {
     , customerSubscriptions  :: StripeList Subscription
     , customerDiscount       :: Maybe Discount
     , customerAccountBalance :: Int
-    , customerSources        :: StripeList Card
+    , customerSources        :: StripeList Source
     , customerCurrency       :: Maybe Currency
     , customerDefaultSource  :: Maybe (Expandable CardId)
     , customerMetaData       :: MetaData
