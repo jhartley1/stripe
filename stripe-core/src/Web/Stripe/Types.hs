@@ -1286,7 +1286,7 @@ data BankAccount = BankAccount {
     , bankAccountCountry            :: Country
     , bankAccountCurrency           :: Currency
     , bankAccountCustomer           :: Text
-    , bankAccountDefaultForCurrency :: MaybeBool
+    , bankAccountDefaultForCurrency :: Maybe Bool
     , bankAccountFingerprint        :: Text
     , bankAccountLast4              :: Text
     , bankAccountMetaData           :: MetaData
