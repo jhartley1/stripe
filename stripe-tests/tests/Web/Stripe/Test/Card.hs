@@ -36,7 +36,7 @@ cardTests stripe = do
       it "Can retrieve a Customer Card" $ do
         result <- stripe $ do
           Customer { customerId = customerid
-                   , customerCards = StripeList { list = [ Card { cardId = cardid } ] }
+                   , customerCards = Just StripeList { list = [ Card { cardId = cardid } ] }
                    } <- createCustomer -&- cardinfo
           card <- getCustomerCard customerid cardid
           void $ deleteCustomer customerid
@@ -50,7 +50,7 @@ cardTests stripe = do
       it "Can retrieve a Customer's Card with expansion" $ do
         result <- stripe $ do
           Customer { customerId = customerid
-                   , customerCards = StripeList { list = [ Card { cardId = cardid } ] }
+                   , customerCards = Just StripeList { list = [ Card { cardId = cardid } ] }
                    } <- createCustomer -&- cardinfo
           card <- getCustomerCard customerid cardid -&- ExpandParams ["customer"]
           void $ deleteCustomer customerid
