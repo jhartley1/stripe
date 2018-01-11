@@ -253,7 +253,7 @@ data Customer = Customer {
     , customerSubscriptions  :: StripeList Subscription
     , customerDiscount       :: Maybe Discount
     , customerAccountBalance :: Int
-    , customerCards          :: StripeList Card
+    , customerCards          :: Maybe (StripeList Card)
     , customerCurrency       :: Maybe Currency
     , customerDefaultCard    :: Maybe (Expandable CardId)
     , customerMetaData       :: MetaData
@@ -277,7 +277,7 @@ instance FromJSON Customer where
            <*> o .: "subscriptions"
            <*> o .:? "discount"
            <*> o .: "account_balance"
-           <*> o .: "cards"
+           <*> o .:? "cards"
            <*> o .:? "currency"
            <*> o .:? "default_card"
            <*> o .: "metadata"
