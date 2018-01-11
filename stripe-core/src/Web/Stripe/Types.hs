@@ -1783,6 +1783,21 @@ instance FromJSON EventType where
 newtype EventId = EventId Text deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
+-- | `Request` of an `Event`
+data Request = Request {
+      requestId             :: Maybe Text
+    , requestIdempotencyKey :: Maybe Text
+} deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | Request JSON instance
+instance FromJSON Request where
+   parseJSON (Object o) =
+        Request <$> o .:? "id"
+                <*> o .: "idempotency_key"
+   parseJSON _  = mzero
+
+------------------------------------------------------------------------------
 -- | EventData
 data EventData =
     TransferEvent Transfer
@@ -1815,7 +1830,7 @@ data Event = Event {
     , eventData            :: EventData
     , eventObject          :: Text
     , eventPendingWebHooks :: Int
-    , eventRequest         :: Maybe Text
+    , eventRequest         :: Maybe Request 
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
