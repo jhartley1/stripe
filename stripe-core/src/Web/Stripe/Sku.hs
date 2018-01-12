@@ -49,13 +49,13 @@ import           Web.Stripe.Util          ((</>))
 -- | Create a `Sku`
 createSku
     :: Currency
-    -> SkuPrice
-    -> ProductId
-    -> StripeRequest CreateSku
+    -> SkuPrice                 -- ^ Currency 'Sku' price is specified in
+    -> ProductId                -- ^ Price of the 'Sku' to create
+    -> StripeRequest CreateSku  -- ^ ID of 'Product' the 'Sku' will be associated with
 createSku
-  currency                      -- ^ Currency `Sku`s price is specified in
-  price                         -- ^ Price of the `Sku` to create
-  (ProductId productid)         -- ^ ID of `Product` the `Sku` will be associated with
+  currency                      
+  price                         
+  (ProductId productid)         
       = request
   where request = mkStripeRequest POST url params
         url     = "skus"

@@ -279,14 +279,11 @@ data Customer = Customer {
     , customerSubscriptions  :: StripeList Subscription
     , customerDiscount       :: Maybe Discount
     , customerAccountBalance :: Int
-    , customerSources        :: StripeList Source
+    , customerSources        :: StripeList Card 
     , customerCurrency       :: Maybe Currency
     , customerDefaultSource  :: Maybe (Expandable CardId)
     , customerMetaData       :: MetaData
-    } | DeletedCustomer {
-      deletedCustomer   :: Maybe Bool
-    , deletedCustomerId :: CustomerId
-  } deriving (Read, Show, Eq, Ord, Data, Typeable)
+    }  deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Customer`
@@ -307,13 +304,7 @@ instance FromJSON Customer where
          <*> o .: "sources"
          <*> o .:? "currency"
          <*> o .:? "default_source"
-         <*> o .: "metadata"
-         <|> DeletedCustomer -- FIXME?
-         <$> o .: "deleted"
-         <*> (CustomerId <$> o .: "id"))
-         <|> DeletedCustomer
-         <$> o .:? "deleted"
-         <*> (CustomerId <$> o .: "id")
+         <*> o .: "metadata")
 
 ------------------------------------------------------------------------------
 -- | AccountBalance for a `Customer`
