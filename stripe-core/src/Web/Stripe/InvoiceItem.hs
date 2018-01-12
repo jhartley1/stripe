@@ -68,7 +68,7 @@ import           Web.Stripe.StripeRequest (Method (GET, POST, DELETE),
                                            mkStripeRequest)
 import           Web.Stripe.Util          ((</>))
 import           Web.Stripe.Types         (Amount(..), Created(..), Currency (..),
-                                           CustomerId (..), Description(..),
+                                           CustomerId (..), Description(..), Discountable(..),
                                            InvoiceId (..), InvoiceItem (..), Invoice(..),
                                            InvoiceItemId (..), Limit(..), StartingAfter(..), EndingBefore(..),
                                            StripeDeleteResult (..), ExpandParams(..),
@@ -98,6 +98,7 @@ type instance StripeReturn CreateInvoiceItem = InvoiceItem
 instance StripeHasParam CreateInvoiceItem InvoiceId
 instance StripeHasParam CreateInvoiceItem SubscriptionId
 instance StripeHasParam CreateInvoiceItem Description
+instance StripeHasParam CreateInvoiceItem Discountable
 instance StripeHasParam CreateInvoiceItem MetaData
 
 ------------------------------------------------------------------------------
@@ -131,6 +132,7 @@ data UpdateInvoiceItem
 type instance StripeReturn UpdateInvoiceItem = InvoiceItem
 instance StripeHasParam UpdateInvoiceItem Amount
 instance StripeHasParam UpdateInvoiceItem Description
+instance StripeHasParam UpdateInvoiceItem Discountable
 instance StripeHasParam UpdateInvoiceItem MetaData
 
 ------------------------------------------------------------------------------

@@ -36,6 +36,7 @@ import           Data.Text          (Text)
 import qualified Data.Text.Encoding as Text
 import           Numeric            (showFFloat)
 import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
+                                     AccountId(..),
                                      AddressCity(..), AddressCountry(..),
                                      ApplicationFeeId(..), AddressLine1(..),
                                      AddressLine2(..), AddressState(..),
@@ -44,36 +45,44 @@ import           Web.Stripe.Types   (AccountBalance(..), AccountNumber(..),
                                      ApplicationFeePercent(..),
                                      AtPeriodEnd(..),
                                      AvailableOn(..), BankAccountId(..),
+                                     BankAccountHolderType(..),
                                      CardId(..), CardNumber(..),
                                      Capture(..), ChargeId(..), Closed(..),
-                                     CouponId(..),
+                                     CouponId(..), Caption(..),
                                      Country(..), Created(..), Currency(..),
                                      CustomerId(..), CVC(..), Date(..),
                                      DefaultCard(..), Description(..),
                                      Duration(..), DurationInMonths(..),
                                      Email(..), EndingBefore(..), EventId(..),
-                                     Evidence(..), Expandable(..),
+                                     Discountable(..),
+                                     DisputeEvidence(..), Expandable(..),
                                      ExpandParams(..), ExpMonth(..),
                                      ExpYear(..), Forgiven(..), Interval(..),
                                      IntervalCount(..),
                                      InvoiceId(..), InvoiceItemId(..),
                                      InvoiceLineItemId(..),
-                                     IsVerified(..), MetaData(..), PlanId(..),
-                                     PlanName(..), Prorate(..), Limit(..),
+                                     MetaData(..), PlanId(..),
+                                     PlanName(..), ProductId(..), ProductName(..),
+                                     ProductURL(..), ProductAttributes(..),
+                                     Shippable(..), ProductActive(..),
+                                     Prorate(..), Limit(..),
                                      MaxRedemptions(..), Name(..),
                                      NewBankAccount(..), NewCard(..),
                                      PercentOff(..), Quantity(..), ReceiptEmail(..),
-                                     RecipientId(..), RecipientType(..), RedeemBy(..),
+                                     RedeemBy(..),
                                      RefundId(..),
                                      RefundApplicationFee(..), RefundReason(..),
                                      RoutingNumber(..), StartingAfter(..),
-                                     StatementDescription(..), Source(..),
-                                     SubscriptionId(..), TaxID(..), 
+                                     StatementDescriptor(..), BalanceSource(..),
+                                     SourceId(..),
+                                     SubscriptionId(..), SkuAttributes(..),
+                                     SubscriptionStatus(..),
+                                     SkuId(..), SkuPrice(..), SkuActive(..),
+                                     SkuImage(..),
                                      TaxPercent(..), TimeRange(..),
                                      TokenId(..), TransactionId(..),
                                      TransactionType(..), TransferId(..),
-                                     TransferStatus(..), TrialEnd(..),
-                                     TrialPeriodDays(..))
+                                     TrialEnd(..), TrialPeriodDays(..))
 import           Web.Stripe.Util    (toBytestring, toExpandable,toMetaData,
                                      toSeconds, getParams, toText)
 
@@ -109,6 +118,10 @@ data StripeRequest a = StripeRequest
 -- | convert a parameter to a key/value
 class ToStripeParam param where
   toStripeParam :: param -> [(ByteString, ByteString)] -> [(ByteString, ByteString)]
+
+instance ToStripeParam AccountId where
+  toStripeParam (AccountId aid) =
+    (("accountid", Text.encodeUtf8 aid) :)
 
 instance ToStripeParam Amount where
   toStripeParam (Amount i) =
@@ -222,6 +235,41 @@ instance ToStripeParam Description where
   toStripeParam (Description txt) =
     (("description", Text.encodeUtf8 txt) :)
 
+instance ToStripeParam Discountable where
+  toStripeParam (Discountable b) =
+    (("discountable", if b then "true" else "false") :)
+
+instance ToStripeParam DisputeEvidence where
+  toStripeParam DisputeEvidence{..} =
+    ((getParams
+        [ ("evidence[access_activity_log]", disputeEvidenceAccessActivityLog)
+        , ("evidence[billing_address]", disputeEvidenceBillingAddress)
+        , ("evidence[cancellation_policy]", disputeEvidenceCancellationPolicy)
+        , ("evidence[cancellation_policy_disclosure]", disputeEvidenceCancellationPolicyDisclosure)
+        , ("evidence[cancellation_rebuttal]", disputeEvidenceCancellationRebuttal)
+        , ("evidence[customer_communication]", disputeEvidenceCustomerCommunication)
+        , ("evidence[customer_email_address]", disputeEvidenceCustomerEmailAddress)
+        , ("evidence[customer_name]", disputeEvidenceCustomerName)
+        , ("evidence[customer_purchase_ip]", disputeEvidenceCustomerPurchaseIp)
+        , ("evidence[customer_signature]", disputeEvidenceCustomerSignature)
+        , ("evidence[duplicate_charge_documentation]", disputeEvidenceDuplicateChargeDocumentation)
+        , ("evidence[duplicate_charge_explanation]", disputeEvidenceDuplicateChargeExplanation)
+        , ("evidence[duplicate_charge_id]", disputeEvidenceDuplicateChargeId)
+        , ("evidence[product_description]", disputeEvidenceProductDescription)
+        , ("evidence[receipt]", disputeEvidenceReceipt)
+        , ("evidence[refund_policy]", disputeEvidenceRefundPolicy)
+        , ("evidence[refund_policy_disclosure]", disputeEvidenceRefundPolicyDisclosure)
+        , ("evidence[refund_refusal_explanation]", disputeEvidenceRefundRefusalExplanation)
+        , ("evidence[service_date]", disputeEvidenceServiceDate)
+        , ("evidence[service_documentation]", disputeEvidenceServiceDocumentation)
+        , ("evidence[shipping_address]", disputeEvidenceShippingAddress)
+        , ("evidence[shipping_date]", disputeEvidenceShippingDate)
+        , ("evidence[shipping_documentation]", disputeEvidenceShippingDocumentation)
+        , ("evidence[shipping_tracking_number]", disputeEvidenceShippingTrackingNumber)
+        , ("evidence[uncategorized_file]", disputeEvidenceUncategorizedFile)
+        , ("evidence[uncategorized_text]", disputeEvidenceUncategorizedText)
+        ]) ++)
+
 instance ToStripeParam Duration where
   toStripeParam duration =
     (("duration", toBytestring duration) :)
@@ -237,10 +285,6 @@ instance ToStripeParam Email where
 instance ToStripeParam EventId where
   toStripeParam (EventId eid) =
     (("event", Text.encodeUtf8 eid) :)
-
-instance ToStripeParam Evidence where
-  toStripeParam (Evidence txt) =
-    (("evidence", Text.encodeUtf8 txt) :)
 
 instance ToStripeParam ExpandParams where
   toStripeParam (ExpandParams params) =
@@ -278,10 +322,6 @@ instance ToStripeParam InvoiceLineItemId where
   toStripeParam (InvoiceLineItemId txt) =
     (("line_item", Text.encodeUtf8 txt) :)
 
-instance ToStripeParam IsVerified where
-  toStripeParam (IsVerified b) =
-    (("verified", if b then "true" else "false") :)
-
 instance ToStripeParam Limit where
   toStripeParam (Limit i) =
     (("limit", toBytestring i) :)
@@ -297,9 +337,16 @@ instance ToStripeParam Name where
 instance ToStripeParam NewBankAccount where
   toStripeParam NewBankAccount{..} =
     ((getParams
-        [ ("bank_account[country]", Just $ (\(Country x) -> x) newBankAccountCountry)
-        , ("bank_account[routing_number]", Just $ (\(RoutingNumber x) -> x) newBankAccountRoutingNumber)
-        , ("bank_account[account_number]", Just $ (\(AccountNumber x) -> x) newBankAccountAccountNumber)
+        [ ("bank_account[account_number]", Just $ (\(AccountNumber x) -> x) newBankAccountAccountNumber)
+        , ("bank_account[country]", Just $ (\(Country x) -> x) newBankAccountCountry)
+        , ("bank_account[currency]", Just $ toText newBankAccountCurrency)
+        , ("bank_account[routing_number]", (\(RoutingNumber x) -> x) <$> newBankAccountRoutingNumber)
+        , ("bank_account[account_holder_name]", newBankAccountHolderName)
+        , ("bank_account[account_holder_type]",
+           case newBankAccountHolderType of
+             Just BankAccountHolderIndividual -> Just "individual"
+             Just BankAccountHolderCompany -> Just "company"
+             Nothing -> Nothing )
         ]) ++)
 
 instance ToStripeParam NewCard where
@@ -334,6 +381,55 @@ instance ToStripeParam PlanName where
   toStripeParam (PlanName txt) =
     (("name", Text.encodeUtf8 txt) :)
 
+instance ToStripeParam ProductId where
+  toStripeParam (ProductId pid) =
+    (("id", Text.encodeUtf8 pid) :)
+
+instance ToStripeParam ProductName where
+  toStripeParam (ProductName pid) =
+    (("name", Text.encodeUtf8 pid) :)
+
+instance ToStripeParam Caption where
+  toStripeParam (Caption cap) =
+    (("caption", Text.encodeUtf8 cap) :)
+
+instance ToStripeParam ProductURL where
+  toStripeParam (ProductURL url) =
+    (("url", Text.encodeUtf8 url) :)
+
+instance ToStripeParam ProductAttributes where
+  toStripeParam (ProductAttributes attrs) =
+    ((fmap (\attr -> ("attributes[]", Text.encodeUtf8 attr)) attrs)
+     ++)
+
+instance ToStripeParam ProductActive where
+  toStripeParam (ProductActive a) =
+    (("active", if a then "true" else "false") :)
+
+instance ToStripeParam Shippable where
+  toStripeParam (Shippable s) =
+    (("shippable", if s then "true" else "false") :)
+
+instance ToStripeParam SkuId where
+  toStripeParam (SkuId sid) =
+    (("id", Text.encodeUtf8 sid) :)
+
+instance ToStripeParam SkuActive where
+  toStripeParam (SkuActive a) =
+    (("active", if a then "true" else "false") :)
+
+instance ToStripeParam SkuPrice where
+  toStripeParam (SkuPrice p) =
+    (("price", toBytestring p) :)
+
+instance ToStripeParam SkuImage where
+  toStripeParam (SkuImage i) =
+    (("image", Text.encodeUtf8 i) :)
+
+instance ToStripeParam SkuAttributes where
+  toStripeParam (SkuAttributes kvs) =
+    (toMetaData kvs ++)
+
 instance ToStripeParam Prorate where
   toStripeParam (Prorate p) =
     (("prorate", if p then "true" else "false") :)
@@ -341,10 +437,6 @@ instance ToStripeParam Prorate where
 instance ToStripeParam Quantity where
   toStripeParam (Quantity i) =
     (("quantity", toBytestring i) :)
-
-instance ToStripeParam RecipientId where
-  toStripeParam (RecipientId rid) =
-    (("recipient", Text.encodeUtf8 rid) :)
 
 instance ToStripeParam RedeemBy where
   toStripeParam (RedeemBy time) =
@@ -358,23 +450,28 @@ instance ToStripeParam ReceiptEmail where
   toStripeParam (ReceiptEmail txt) =
     (("receipt_email", Text.encodeUtf8 txt) :)
 
-instance ToStripeParam RecipientType where
-  toStripeParam recipientType =
-    (("type", toBytestring recipientType) :)
-
-instance ToStripeParam a => ToStripeParam (Source a) where
-  toStripeParam (Source param) =
+instance ToStripeParam a => ToStripeParam (BalanceSource a) where
+  toStripeParam (BalanceSource param) =
     case toStripeParam param [] of
       [(_, p)] -> (("source", p) :)
       _        -> error "source applied to non-singleton"
+
+instance ToStripeParam SourceId where
+  toStripeParam (SourceId sid) =
+    (("source", Text.encodeUtf8 sid) :)
 
 instance ToStripeParam SubscriptionId where
   toStripeParam (SubscriptionId sid) =
     (("subscription", Text.encodeUtf8 sid) :)
 
-instance ToStripeParam TaxID where
-  toStripeParam (TaxID tid) =
-    (("tax_id", Text.encodeUtf8 tid) :)
+instance ToStripeParam SubscriptionStatus where
+  toStripeParam status =
+    (("status", case status of
+                  Trialing -> "trialing"
+                  Active -> "active"
+                  PastDue -> "past_due"
+                  UnPaid -> "unpaid"
+                  Canceled -> "canceled") :)
 
 instance ToStripeParam TaxPercent where
   toStripeParam (TaxPercent tax) =
@@ -419,10 +516,6 @@ instance ToStripeParam TransferId where
   toStripeParam (TransferId tid) =
     (("transfer", Text.encodeUtf8 tid) :)
 
-instance ToStripeParam TransferStatus where
-  toStripeParam transferStatus =
-    (("status", toBytestring transferStatus) :)
-
 instance ToStripeParam TrialPeriodDays where
   toStripeParam (TrialPeriodDays days) =
     (("trial_period_days", toBytestring days) :)
@@ -442,9 +535,9 @@ instance ToStripeParam RefundReason where
          RefundFraudulent -> "fraudulent"
          RefundRequestedByCustomer -> "requested_by_customer") :)
 
-instance ToStripeParam StatementDescription where
-  toStripeParam (StatementDescription txt) =
-    (("statement_description", Text.encodeUtf8 txt) :)
+instance ToStripeParam StatementDescriptor where
+  toStripeParam (StatementDescriptor txt) =
+    (("statement_descriptor", Text.encodeUtf8 txt) :)
 
 instance ToStripeParam TransactionType where
   toStripeParam txn =
@@ -457,7 +550,15 @@ instance ToStripeParam TransactionType where
                                    -> "application_fee_refund"
                 TransferTxn        -> "transfer"
                 TransferCancelTxn  -> "transfer_cancel"
-                TransferFailureTxn -> "transfer_failure") :)
+                TransferFailureTxn -> "transfer_failure"
+                PaymentTxn         -> "payment"
+                PaymentFailureRefundTxn -> "payment_failure_refund"
+                PaymentRefundTxn   -> "payment_refund"
+                TransferRefundTxn  -> "transfer_refund"
+                PayoutTxn          -> "payout"
+                PayoutCancelTxn    -> "payout_cancel"
+                PayoutFailureTxn   -> "payout_failure"
+                ValidationTxn      -> "validation") :)
 
 
 instance (ToStripeParam param) => ToStripeParam (StartingAfter param) where

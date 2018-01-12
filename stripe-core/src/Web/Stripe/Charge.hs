@@ -76,7 +76,7 @@ module Web.Stripe.Charge
     , NewCard       (..)
     , ReceiptEmail  (..)
     , StartingAfter (..)
-    , StatementDescription (..)
+    , StatementDescriptor (..)
     , StripeList    (..)
     , TokenId       (..)
     ) where
@@ -87,7 +87,7 @@ import           Web.Stripe.StripeRequest   (Method (GET, POST),
                                              mkStripeRequest)
 import           Web.Stripe.Util            ((</>))
 import           Web.Stripe.Types           (Amount(..), ApplicationFeeAmount(..),
-                                             CVC (..),
+                                             CVC (..), TimeRange(..),
                                              Capture(..),
                                              CardNumber (..), Charge (..),
                                              ChargeId (..), Created(..),
@@ -98,7 +98,7 @@ import           Web.Stripe.Types           (Amount(..), ApplicationFeeAmount(..
                                              NewCard(..), Email (..),
                                              StartingAfter(..),
                                              ReceiptEmail(..),
-                                             StatementDescription(..),
+                                             StatementDescriptor(..),
                                              ExpandParams(..),
                                              StripeList (..), TokenId (..))
 import           Web.Stripe.Types.Util      (getChargeId)
@@ -127,7 +127,7 @@ instance StripeHasParam CreateCharge TokenId
 instance StripeHasParam CreateCharge Description
 instance StripeHasParam CreateCharge MetaData
 instance StripeHasParam CreateCharge Capture
-instance StripeHasParam CreateCharge StatementDescription
+instance StripeHasParam CreateCharge StatementDescriptor
 instance StripeHasParam CreateCharge ReceiptEmail
 instance StripeHasParam CreateCharge ApplicationFeeAmount
 
@@ -161,6 +161,7 @@ data UpdateCharge
 type instance StripeReturn UpdateCharge = Charge
 instance StripeHasParam UpdateCharge Description
 instance StripeHasParam UpdateCharge MetaData
+instance StripeHasParam UpdateCharge ReceiptEmail
 
 ------------------------------------------------------------------------------
 -- | a `Charge` to be captured
@@ -191,6 +192,7 @@ data GetCharges
 type instance StripeReturn GetCharges = StripeList Charge
 instance StripeHasParam GetCharges ExpandParams
 instance StripeHasParam GetCharges Created
+instance StripeHasParam GetCharges (TimeRange Created)
 instance StripeHasParam GetCharges CustomerId
 instance StripeHasParam GetCharges (EndingBefore ChargeId)
 instance StripeHasParam GetCharges Limit

@@ -42,10 +42,11 @@ import           Web.Stripe.Types         ( Account   (..)
 
 ------------------------------------------------------------------------------
 -- | Retrieve the object that represents your Stripe account
-data GetAccountDetails
-type instance StripeReturn GetAccountDetails = Account
 getAccountDetails :: StripeRequest GetAccountDetails
 getAccountDetails = request
   where request = mkStripeRequest GET url params
         url     = "account"
         params  = []
+
+data GetAccountDetails
+type instance StripeReturn GetAccountDetails = Account

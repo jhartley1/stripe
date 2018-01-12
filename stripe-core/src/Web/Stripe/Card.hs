@@ -42,31 +42,19 @@ module Web.Stripe.Card
       -- *** Create Card
       CreateCustomerCardByToken
     , createCustomerCardByToken
-    , CreateRecipientCardByToken
-    , createRecipientCardByToken
     , CreateCustomerCard
     , createCustomerCard
-    , CreateRecipientCard
-    , createRecipientCard
       -- *** Get Card(s)
     , GetCustomerCard
     , getCustomerCard
-    , GetRecipientCard
-    , getRecipientCard
     , GetCustomerCards
     , getCustomerCards
-    , GetRecipientCards
-    , getRecipientCards
       -- *** Update Card
     , UpdateCustomerCard
     , updateCustomerCard
-    , UpdateRecipientCard
-    , updateRecipientCard
       -- *** Delete Card
     , DeleteCustomerCard
     , deleteCustomerCard
-    , DeleteRecipientCard
-    , deleteRecipientCard
       -- * Types
     , AddressLine1    (..)
     , AddressLine2    (..)
@@ -85,9 +73,6 @@ module Web.Stripe.Card
     , ExpYear         (..)
     , Limit           (..)
     , Name            (..)
-    , RecipientCard   (..)
-    , RecipientCardId (..)
-    , RecipientId     (..)
     , StartingAfter   (..)
     ) where
 
@@ -106,12 +91,10 @@ import           Web.Stripe.Types         (AddressLine1(..), AddressLine2(..)
                                           , ExpandParams(..)
                                           , ExpMonth(..), ExpYear(..), ID
                                           , Limit(..), Name(..), NewCard(..)
-                                          , RecipientCard(..)
-                                          , RecipientId(..), RecipientCardId(..)
                                           , StartingAfter(..)
                                           , StripeDeleteResult(..)
                                           , StripeList(..), TokenId(..), URL)
-import           Web.Stripe.Types.Util    (getCustomerId, getRecipientId)
+import           Web.Stripe.Types.Util    (getCustomerId)
 
 ------------------------------------------------------------------------------
 -- | INTERNAL: generalized `Card` creation from a `TokenId`
@@ -143,20 +126,6 @@ data CreateCustomerCardByToken
 type instance StripeReturn CreateCustomerCardByToken = Card
 
 ------------------------------------------------------------------------------
--- | `Recipient` `Card` creation from a `TokenId`
-createRecipientCardByToken
-    :: RecipientId -- ^ `RecipientId` of card holder
-    -> TokenId     -- ^ `TokenId` of card to add
-    -> StripeRequest CreateRecipientCardByToken
-createRecipientCardByToken
-  recipientid
-  tokenid =
-    createCardByToken "recipients" (getRecipientId recipientid) tokenid
-
-data CreateRecipientCardByToken
-type instance StripeReturn CreateRecipientCardByToken = RecipientCard
-
-------------------------------------------------------------------------------
 -- | INTERNAL: generalized `Card` creation from card info
 createCard
     :: URL
@@ -183,19 +152,6 @@ createCustomerCard
 
 data CreateCustomerCard
 type instance StripeReturn CreateCustomerCard = Card
-
-------------------------------------------------------------------------------
--- | `Recipient` `Card` creation from card info
-createRecipientCard
-    :: RecipientId -- ^ `RecipientId` of card holder
-    -> NewCard     -- ^ `NewCard` data for the card
-    -> StripeRequest CreateRecipientCard
-createRecipientCard
-  recipientid
-  newCard = createCard "recipients" (getRecipientId recipientid) newCard
-
-data CreateRecipientCard
-type instance StripeReturn CreateRecipientCard = RecipientCard
 
 ------------------------------------------------------------------------------
 -- | INTERNAL: generalized Get card by `CustomerId` and `CardId`
@@ -226,21 +182,6 @@ getCustomerCard
 data GetCustomerCard
 type instance StripeReturn GetCustomerCard = Card
 instance StripeHasParam GetCustomerCard ExpandParams
-
-------------------------------------------------------------------------------
--- | Get card by `RecipientId` and `RecipientCardId`
-getRecipientCard
-    :: RecipientId         -- ^ `RecipientId` of the `Card` to retrieve
-    -> RecipientCardId     -- ^ `CardId` of the card to retrieve
-    -> StripeRequest GetRecipientCard
-getRecipientCard
-  recipientid
-  (RecipientCardId cardid)
-    = getCard "recipients" (getRecipientId recipientid) cardid
-
-data GetRecipientCard
-type instance StripeReturn GetRecipientCard = RecipientCard
-instance StripeHasParam GetRecipientCard ExpandParams
 
 ------------------------------------------------------------------------------
 -- | INTERNAL: Generalized update a `Card`
@@ -281,30 +222,6 @@ instance StripeHasParam UpdateCustomerCard ExpMonth
 instance StripeHasParam UpdateCustomerCard ExpYear
 instance StripeHasParam UpdateCustomerCard Name
 
-
-------------------------------------------------------------------------------
--- | Update a `Recipient` `Card`
-updateRecipientCard
-    :: RecipientId      -- ^ `RecipientId` of the card holder
-    -> RecipientCardId  -- ^ `RecipientCardId` of the card to update
-    -> StripeRequest UpdateRecipientCard
-updateRecipientCard
-  recipientid
-  (RecipientCardId cardid)
-    = updateCard "recipients" (getRecipientId recipientid) cardid
-
-data UpdateRecipientCard
-type instance StripeReturn UpdateRecipientCard = RecipientCard
-instance StripeHasParam UpdateRecipientCard AddressLine1
-instance StripeHasParam UpdateRecipientCard AddressLine2
-instance StripeHasParam UpdateRecipientCard AddressCity
-instance StripeHasParam UpdateRecipientCard AddressZip
-instance StripeHasParam UpdateRecipientCard AddressState
-instance StripeHasParam UpdateRecipientCard AddressCountry
-instance StripeHasParam UpdateRecipientCard ExpMonth
-instance StripeHasParam UpdateRecipientCard ExpYear
-instance StripeHasParam UpdateRecipientCard Name
-
 ------------------------------------------------------------------------------
 -- | INTERNAL: Generalized remove a card from a `Customer`
 deleteCard
@@ -332,20 +249,6 @@ deleteCustomerCard
 
 data DeleteCustomerCard
 type instance StripeReturn DeleteCustomerCard = StripeDeleteResult
-
-------------------------------------------------------------------------------
--- | Removes a `RecipientCard` with from a `Recipient`
-deleteRecipientCard
-    :: RecipientId     -- ^ `RecipientId` of the `Card` to retrieve
-    -> RecipientCardId -- ^ `CardId` associated with `Card` to be deleted
-    -> StripeRequest DeleteRecipientCard
-deleteRecipientCard
-    recipientid
-    (RecipientCardId cardid)
-      = deleteCard "recipients" (getRecipientId recipientid) cardid
-
-data DeleteRecipientCard
-type instance StripeReturn DeleteRecipientCard = StripeDeleteResult
 
 ------------------------------------------------------------------------------
 -- | INTERNAL: Generalized retrieve all cards for `ID`
@@ -376,19 +279,3 @@ instance StripeHasParam GetCustomerCards ExpandParams
 instance StripeHasParam GetCustomerCards (EndingBefore CardId)
 instance StripeHasParam GetCustomerCards Limit
 instance StripeHasParam GetCustomerCards (StartingAfter CardId)
-
-------------------------------------------------------------------------------
--- | Retrieve all cards associated with a `Recipient`
-getRecipientCards
-    :: RecipientId    -- ^ The `RecipientId` associated with the cards
-    -> StripeRequest GetRecipientCards
-getRecipientCards
-    recipientid
-    = getCards "recipients" (getRecipientId recipientid)
-
-data GetRecipientCards
-type instance StripeReturn GetRecipientCards = (StripeList RecipientCard)
-instance StripeHasParam GetRecipientCards ExpandParams
-instance StripeHasParam GetRecipientCards (EndingBefore CardId)
-instance StripeHasParam GetRecipientCards Limit
-instance StripeHasParam GetRecipientCards (StartingAfter CardId)

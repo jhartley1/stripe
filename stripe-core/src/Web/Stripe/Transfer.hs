@@ -43,6 +43,7 @@ module Web.Stripe.Transfer
     , GetTransfers
     , getTransfers
       -- * Types
+    , AccountId       (..)
     , Amount          (..)
     , BankAccountId   (..)
     , Card            (..)
@@ -53,14 +54,11 @@ module Web.Stripe.Transfer
     , Description     (..)
     , EndingBefore    (..)
     , ExpandParams    (..)
-    , Recipient       (..)
-    , RecipientId     (..)
     , StartingAfter   (..)
-    , StatementDescription (..)
+    , StatementDescriptor (..)
     , StripeList      (..)
     , Transfer        (..)
     , TransferId      (..)
-    , TransferStatus  (..)
     , TransferType    (..)
     , Limit           (..)
     ) where
@@ -69,31 +67,30 @@ import           Web.Stripe.StripeRequest (Method (GET, POST),
                                            StripeReturn, ToStripeParam(..),
                                            mkStripeRequest)
 import           Web.Stripe.Util          ((</>))
-import           Web.Stripe.Types         (Amount(..), BankAccountId(..), Card(..),
+import           Web.Stripe.Types         (AccountId(..), Amount(..), BankAccountId(..), Card(..),
                                            CardId(..), Created(..),Currency (..),
                                            Date(..), EndingBefore(..),
                                            ExpandParams(..),
-                                           Limit(..), MetaData(..), Recipient (..),
-                                           RecipientId(..), StartingAfter(..),
-                                           StatementDescription(..),
+                                           Limit(..), MetaData(..), StartingAfter(..),
+                                           StatementDescriptor(..),
                                            StripeList (..), Transfer (..),
-                                           TransferId (..), TransferStatus (..),
+                                           TransferId (..),
                                            Description(..), TransferType (..))
 
 ------------------------------------------------------------------------------
 -- | Create a `Transfer`
 createTransfer
-    :: RecipientId -- ^ The `RecipientId` of the `Recipient` who will receive the `Transfer`
-    -> Amount      -- ^ The `Amount` of money to transfer to the `Recipient`
+    :: AccountId   -- ^ The `AccountId` of the `Account` who will receive the `Transfer`
+    -> Amount      -- ^ The `Amount` of money to transfer to the `Account`
     -> Currency    -- ^ The `Currency` in which to perform the `Transfer`
     -> StripeRequest CreateTransfer
 createTransfer
-    recipientid
+    accountid
     amount
     currency    = request
   where request = mkStripeRequest POST url params
         url     = "transfers"
-        params  = toStripeParam recipientid $
+        params  = toStripeParam accountid $
                   toStripeParam amount      $
                   toStripeParam currency    $
                   []
@@ -103,7 +100,7 @@ type instance StripeReturn CreateTransfer = Transfer
 instance StripeHasParam CreateTransfer Description
 instance StripeHasParam CreateTransfer BankAccountId
 instance StripeHasParam CreateTransfer CardId
-instance StripeHasParam CreateTransfer StatementDescription
+instance StripeHasParam CreateTransfer StatementDescriptor
 instance StripeHasParam CreateTransfer MetaData
 
 ------------------------------------------------------------------------------
@@ -169,6 +166,4 @@ instance StripeHasParam GetTransfers Created
 instance StripeHasParam GetTransfers Date
 instance StripeHasParam GetTransfers (EndingBefore TransferId)
 instance StripeHasParam GetTransfers Limit
-instance StripeHasParam GetTransfers RecipientId
 instance StripeHasParam GetTransfers (StartingAfter TransferId)
-instance StripeHasParam GetTransfers TransferStatus

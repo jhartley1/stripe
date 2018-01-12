@@ -54,7 +54,7 @@ module Web.Stripe.Plan
     , PlanId              (..)
     , PlanName            (..)
     , StartingAfter       (..)
-    , StatementDescription(..)
+    , StatementDescriptor (..)
     , StripeDeleteResult  (..)
     , StripeList          (..)
     , TrialPeriodDays     (..)
@@ -71,7 +71,8 @@ import           Web.Stripe.Types         (PlanId (..) , Plan (..), PlanName(..)
                                            Limit(..), StartingAfter(..),
                                            EndingBefore(..), StripeDeleteResult(..),
                                            Currency (..), Amount(..),
-                                           StatementDescription(..), MetaData(..))
+                                           StatementDescriptor(..), MetaData(..),
+                                           Created(..), TimeRange(..))
 import           Web.Stripe.Util          ((</>))
 
 ------------------------------------------------------------------------------
@@ -103,15 +104,14 @@ type instance StripeReturn CreatePlan = Plan
 instance StripeHasParam CreatePlan IntervalCount
 instance StripeHasParam CreatePlan TrialPeriodDays
 instance StripeHasParam CreatePlan MetaData
-instance StripeHasParam CreatePlan StatementDescription
+instance StripeHasParam CreatePlan StatementDescriptor
 
 ------------------------------------------------------------------------------
 -- | Retrieve a `Plan`
 getPlan
     :: PlanId -- ^ The ID of the plan to retrieve
     -> StripeRequest GetPlan
-getPlan
-    (PlanId planid) = request
+getPlan (PlanId planid) = request
   where request = mkStripeRequest GET url params
         url     = "plans" </> planid
         params  = []
@@ -124,9 +124,7 @@ type instance StripeReturn GetPlan = Plan
 updatePlan
     :: PlanId            -- ^ The ID of the `Plan` to update
     -> StripeRequest UpdatePlan
-updatePlan
-    (PlanId planid)
-                = request
+updatePlan (PlanId planid) = request
   where request = mkStripeRequest POST url params
         url     = "plans" </> planid
         params  = []
@@ -135,15 +133,15 @@ data UpdatePlan
 type instance StripeReturn UpdatePlan = Plan
 instance StripeHasParam UpdatePlan PlanName
 instance StripeHasParam UpdatePlan MetaData
-instance StripeHasParam UpdatePlan StatementDescription
+instance StripeHasParam UpdatePlan StatementDescriptor
+instance StripeHasParam UpdatePlan TrialPeriodDays
 
 ------------------------------------------------------------------------------
 -- | Delete a `Plan`
 deletePlan
     :: PlanId -- ^ The ID of the `Plan` to delete
     -> StripeRequest DeletePlan
-deletePlan
-    (PlanId planid) = request
+deletePlan (PlanId planid) = request
   where request = mkStripeRequest DELETE url params
         url     = "plans" </> planid
         params  = []
@@ -161,6 +159,8 @@ getPlans = request
 
 data GetPlans
 type instance StripeReturn GetPlans = (StripeList Plan)
+instance StripeHasParam GetPlans Created
+instance StripeHasParam GetPlans (TimeRange Created)
 instance StripeHasParam GetPlans (EndingBefore PlanId)
 instance StripeHasParam GetPlans Limit
 instance StripeHasParam GetPlans (StartingAfter PlanId)

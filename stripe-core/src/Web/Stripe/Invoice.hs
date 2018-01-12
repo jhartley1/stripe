@@ -75,7 +75,7 @@ module Web.Stripe.Invoice
     , Limit               (..)
     , MetaData            (..)
     , Period              (..)
-    , StatementDescription(..)
+    , StatementDescriptor (..)
     , StartingAfter       (..)
     , StripeList          (..)
     , SubscriptionId      (..)
@@ -95,7 +95,7 @@ import           Web.Stripe.Types         (ApplicationFeeId(..), Closed(..),
                                            InvoiceLineItemType(..),
                                            Limit(..), MetaData(..), Period(..),
                                            SubscriptionId(..), StartingAfter(..),
-                                           StatementDescription(..),
+                                           StatementDescriptor(..),
                                            StripeList(..))
 import           Web.Stripe.Types.Util    (getInvoiceId)
 
@@ -117,7 +117,7 @@ type instance StripeReturn CreateInvoice = Invoice
 instance StripeHasParam CreateInvoice ApplicationFeeId
 instance StripeHasParam CreateInvoice Description
 instance StripeHasParam CreateInvoice MetaData
-instance StripeHasParam CreateInvoice StatementDescription
+instance StripeHasParam CreateInvoice StatementDescriptor
 instance StripeHasParam CreateInvoice SubscriptionId
 
 ------------------------------------------------------------------------------
@@ -203,7 +203,7 @@ instance StripeHasParam UpdateInvoice Closed
 instance StripeHasParam UpdateInvoice Description
 instance StripeHasParam UpdateInvoice Forgiven
 instance StripeHasParam UpdateInvoice MetaData
-instance StripeHasParam UpdateInvoice StatementDescription
+instance StripeHasParam UpdateInvoice StatementDescriptor
 
 ------------------------------------------------------------------------------
 -- | Pay `Invoice` by `InvoiceId`

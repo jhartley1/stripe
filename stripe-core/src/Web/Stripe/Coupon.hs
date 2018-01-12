@@ -70,9 +70,9 @@ import           Web.Stripe.Types         (AmountOff (..), Coupon (..),
                                            EndingBefore(..), Limit(..),
                                            MaxRedemptions (..), MetaData(..),
                                            PercentOff (..), RedeemBy (..),
-                                           StartingAfter(..),
+                                           StartingAfter(..), Created(..),
                                            StripeDeleteResult (..),
-                                           StripeList (..))
+                                           StripeList (..), TimeRange(..))
 
 ------------------------------------------------------------------------------
 -- | Create `Coupon`
@@ -158,6 +158,8 @@ getCoupons
 
 data GetCoupons
 type instance StripeReturn GetCoupons = (StripeList Coupon)
+instance StripeHasParam GetCoupons Created
+instance StripeHasParam GetCoupons (TimeRange Created)
 instance StripeHasParam GetCoupons (EndingBefore CouponId)
 instance StripeHasParam GetCoupons Limit
 instance StripeHasParam GetCoupons (StartingAfter CouponId)
