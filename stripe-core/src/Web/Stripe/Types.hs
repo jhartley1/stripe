@@ -2425,8 +2425,8 @@ data Request = Request {
 -- | Request JSON instance
 instance FromJSON Request where
    parseJSON (Object o) =
-        Request <$> o .:? "id"
-                <*> o .: "idempotency_key"
+        Request <$> o .: "id"
+                <*> o .:? "idempotency_key"
    parseJSON _  = mzero
 
 ------------------------------------------------------------------------------
@@ -2469,22 +2469,9 @@ data Event = Event {
     , eventData            :: EventData
     , eventObject          :: Text
     , eventPendingWebHooks :: Int
-    , eventRequest         :: Maybe EventRequest
+    , eventRequest         :: Maybe Request
 } deriving (Read, Show, Eq, Ord, Data, Typeable)
 
-------------------------------------------------------------------------------
--- | request identifier object for an `Event`
-data EventRequest = EventRequest {
-      eventRequestId :: Text
-    , eventRequestIdempotencyKey :: Maybe Text
-    } deriving (Read, Show, Eq, Ord, Data, Typeable)
-
--- | JSON instance for an `EventRequest`
-instance FromJSON EventRequest where
-    parseJSON =
-      withObject "request" $ \o ->
-        EventRequest <$> o .: "id"
-                     <*> o .: "idempotency_key"
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Event`
