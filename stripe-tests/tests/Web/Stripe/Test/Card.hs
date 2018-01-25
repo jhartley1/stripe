@@ -81,6 +81,7 @@ cardTests stripe = do
           void $ deleteCustomer customerid
           return card
         result `shouldSatisfy` isRight
+      {-
 
       it "Can delete a Customer's Cards" $ do
         result <- stripe $ do
@@ -116,6 +117,7 @@ cardTests stripe = do
         cardAddressLine2   `shouldBe` (Just cardaddressTwo)
         cardAddressState   `shouldBe` (Just cardaddressState)
         cardAddressZip     `shouldBe` (Just cardzip)
+      -}
 
   where
     cardinfo = (mkNewCard credit em ey) { newCardCVC = Just cvc }

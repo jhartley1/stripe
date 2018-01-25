@@ -21,6 +21,7 @@ import           Control.Monad       (mzero)
 import           Data.Aeson          (FromJSON (parseJSON), ToJSON(..),
                                       Value (String, Object, Bool), (.:),
                                       (.:?), (.!=), withObject, withText)
+import           Data.Aeson          as A
 import           Data.Data           (Data, Typeable)
 import qualified Data.HashMap.Strict as H
 import           Data.Ratio          ((%))
@@ -57,6 +58,7 @@ type instance ExpandsTo DisputeId       = Dispute
 type instance ExpandsTo InvoiceId       = Invoice
 type instance ExpandsTo InvoiceItemId   = InvoiceItem
 type instance ExpandsTo TransactionId   = BalanceTransaction
+type instance ExpandsTo SourceId        = Source
 
 ------------------------------------------------------------------------------
 -- | JSON Instance for `Expandable`
@@ -279,9 +281,9 @@ data Customer = Customer {
     , customerSubscriptions  :: StripeList Subscription
     , customerDiscount       :: Maybe Discount
     , customerAccountBalance :: Int
-    , customerSources        :: StripeList Card 
+    , customerSources        :: StripeList Source 
     , customerCurrency       :: Maybe Currency
-    , customerDefaultSource  :: Maybe (Expandable CardId)
+    , customerDefaultSource  :: Maybe (Expandable SourceId)
     , customerMetaData       :: MetaData
     }  deriving (Read, Show, Eq, Ord, Data, Typeable)
 
@@ -329,9 +331,15 @@ newtype CardNumber     = CardNumber Text deriving (Read, Show, Eq, Ord, Data, Ty
 -- | Expiration Month for a `Card`
 newtype ExpMonth       = ExpMonth Int deriving (Read, Show, Eq, Ord, Data, Typeable)
 
+instance ToJSON ExpMonth where
+  toJSON (ExpMonth v) = toJSON v
+
 ------------------------------------------------------------------------------
 -- | Expiration Year for a `Card`
 newtype ExpYear        = ExpYear Int deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+instance ToJSON ExpYear where
+  toJSON (ExpYear v) = toJSON v
 
 ------------------------------------------------------------------------------
 -- | CVC for a `Card`
@@ -383,6 +391,16 @@ instance FromJSON Brand where
    parseJSON (String "DinersClub") = pure DinersClub
    parseJSON _ = mzero
 
+
+instance ToJSON Brand where
+  toJSON Visa = String "Visa"
+  toJSON AMEX = String "American Express"
+  toJSON MasterCard = String "MasterCard"
+  toJSON Discover = String "Discover"
+  toJSON JCB = String "JCB"
+  toJSON DinersClub = String "DinersClub"
+  toJSON Unknown = String "Unknown"
+
 ------------------------------------------------------------------------------
 -- | `Card` Object
 data Card = Card {
@@ -414,7 +432,7 @@ data Card = Card {
 instance FromJSON Card where
     parseJSON =
       withObject "card" $ \o ->
-        Card <$> (CardId <$> o .: "id")
+        Card <$> (CardId <$>  o .: "id")
              <*> o .: "object"
              <*> o .: "last4"
              <*> o .: "brand"
@@ -1674,7 +1692,7 @@ instance FromJSON Source where
       String valType <- o .: "type"
       sourceValue <-
           case valType of
-            "card" -> pure SourceValueCard
+            "card" -> SourceValueCard <$> o .: "card"
             "three_d_secure" -> pure SourceValueThreeDSecure
             "giropay" -> pure SourceValueGiropay
             "sepa_debit" -> pure SourceValueSepaDebit
@@ -1705,9 +1723,33 @@ instance FromJSON SourceId where
     parseJSON = withText "source id" (pure . SourceId)
 
 ------------------------------------------------------------------------------
+-- |  Address for a `SourceOwner`
+data SourceAddress = SourceAddress {
+      addressCity       :: Maybe Text
+    , addressCountry    :: Maybe Text
+    , addressLine1      :: Maybe Text
+    , addressLine2      :: Maybe Text
+    , addressPostalCode :: Maybe Text
+    , addressState      :: Maybe Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+
+-- | JSON instance for `SourceId`
+instance FromJSON SourceAddress where
+    parseJSON =
+      withObject "address" $ \o ->
+        SourceAddress <$> o .:? "city"
+                      <*> o .:? "country"
+                      <*> o .:? "line1"
+                      <*> o .:? "line2"
+                      <*> o .:? "postal_code"
+                      <*> o .:? "state"
+
+
+------------------------------------------------------------------------------
 -- | Owner for a `Source` object
 data SourceOwner = SourceOwner {
-      ownerAddress :: Maybe Text
+      ownerAddress :: Maybe SourceAddress 
     , ownerEmail :: Maybe Text
     , ownerName :: Maybe Text
     , ownerPhone :: Maybe Text
@@ -1731,9 +1773,68 @@ instance FromJSON SourceOwner where
                     <*> o .:? "verified_phone"
 
 ------------------------------------------------------------------------------
+-- | Card for a `Source` object, this omits many fields available in cards normally
+
+data SourceCard = SourceCard {
+      sourceCardAddressLine1Check    :: Maybe Text
+    , sourceCardAddressZipCheck      :: Maybe Text
+    , sourceCardAutomaticallyUpdated :: Bool
+    , sourceCardBrand                :: Brand
+    , sourceCardCountry              :: Maybe Text
+    , sourceCardCVCCheck             :: Maybe Text
+    , sourceCardDynamicLastFour      :: Maybe Text
+    , sourceCardExpMonth             :: ExpMonth
+    , sourceCardExpYear              :: ExpYear
+    , sourceCardFingerprint          :: Text
+    , sourceCardFunding              :: Text
+    , sourceCardLastFour             :: Text
+    , sourceCardThreeDSecure         :: Maybe Text
+    , sourceCardTokenizationMethod   :: Maybe Text
+    } deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | JSON Instance for `SourceCard`
+instance FromJSON SourceCard where
+    parseJSON =
+      withObject "SourceCard" $ \o ->
+        SourceCard <$> o .:? "address_line1_check"
+             <*> o .:? "address_zip_check"
+             <*> o .: "card_automatically_updated"
+             <*> o .: "brand"
+             <*> o .:? "country"
+             <*> o .:? "cvc_check"
+             <*> o .:? "dynamic_last4"
+             <*> (ExpMonth <$> o .: "exp_month")
+             <*> (ExpYear <$> o .: "exp_year")
+             <*> o .: "fingerprint"
+             <*> o .: "funding"
+             <*> o .: "last4"
+             <*> o .: "three_d_secure"
+             <*> o .: "tokenization_method"
+
+instance ToJSON SourceCard where
+  toJSON (SourceCard {..}) = 
+    A.object [
+      "address_line1_check" .= sourceCardAddressLine1Check,
+      "address_zip_check" .= sourceCardAddressZipCheck,
+      "card_automatically_updated" .= sourceCardAutomaticallyUpdated,
+      "brand" .= sourceCardBrand,
+      "country" .= sourceCardCountry,
+      "cvc_check" .= sourceCardCVCCheck,
+      "dynamic_last4" .= sourceCardDynamicLastFour,
+      "exp_month" .= sourceCardExpMonth,
+      "exp_year" .= sourceCardExpYear,
+      "fingerprint" .= sourceCardFingerprint,
+      "funding" .= sourceCardFunding,
+      "last4" .= sourceCardLastFour,
+      "three_d_secure" .= sourceCardThreeDSecure,
+      "tokenization_method" .= sourceCardTokenizationMethod
+    ]
+
+------------------------------------------------------------------------------
 -- | type for a `Source` object
 data SourceValue
-  = SourceValueCard
+  = SourceValueCard SourceCard
   | SourceValueThreeDSecure
   | SourceValueGiropay
   | SourceValueSepaDebit
