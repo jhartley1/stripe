@@ -141,6 +141,7 @@ data UpdateCustomer
 type instance StripeReturn UpdateCustomer = Customer
 instance StripeHasParam UpdateCustomer AccountBalance
 instance StripeHasParam UpdateCustomer TokenId
+instance StripeHasParam UpdateCustomer SourceId
 instance StripeHasParam UpdateCustomer NewCard
 instance StripeHasParam UpdateCustomer CouponId
 instance StripeHasParam UpdateCustomer DefaultCard
