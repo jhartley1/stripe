@@ -627,7 +627,9 @@ newtype TrialPeriod = TrialPeriod UTCTime deriving (Show, Eq)
 
 ------------------------------------------------------------------------------
 -- | `TrialEnd` for a Plan
-newtype TrialEnd = TrialEnd UTCTime
+data TrialEnd = 
+    TrialEnd UTCTime
+  | TrialEndNow
     deriving (Read, Show, Eq, Ord, Data, Typeable)
 
 ------------------------------------------------------------------------------

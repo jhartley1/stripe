@@ -507,6 +507,8 @@ instance ToStripeParam TokenId where
 instance ToStripeParam TrialEnd where
   toStripeParam (TrialEnd time) =
     (("trial_end", toBytestring $ toSeconds time) :)
+  toStripeParam (TrialEndNow) =
+    (("trial_end", "now") :)
 
 instance ToStripeParam TransactionId where
   toStripeParam (TransactionId tid) =
