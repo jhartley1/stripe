@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE UndecidableInstances #-}
 ------------------------------------------------------------------------------
 -- |
@@ -25,7 +26,7 @@ import           Data.Aeson          as A
 import           Data.Data           (Data, Typeable)
 import qualified Data.HashMap.Strict as H
 import           Data.Ratio          ((%))
-import           Data.Text           (Text)
+import           Data.Text           (Text, breakOn)
 import           Data.Time           (UTCTime)
 import           Numeric             (fromRat, showFFloat)
 import           Text.Read           (lexP, pfail)
@@ -65,6 +66,35 @@ type instance ExpandsTo SourceId        = Source
 instance (FromJSON id,  FromJSON (ExpandsTo id)) =>
          FromJSON (Expandable id) where
   parseJSON v = (Id <$> parseJSON v) <|> (Expanded <$> parseJSON v)
+
+------------------------------------------------------------------------------
+-- | `SourceField` for a `Customer` or `Charge`
+newtype SourceField = SourceField (Either Card Source)
+  deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | JSON Instance for `SourceField`
+instance FromJSON SourceField where
+    parseJSON v = 
+      withObject "source"
+        (\o -> do
+          object <- o .: "object"
+          SourceField <$> case (object :: Text) of
+            "card" -> Left <$> parseJSON v
+            "source" -> Right <$> parseJSON v) 
+        v
+
+------------------------------------------------------------------------------
+-- | `SourceFieldId` for a `Customer`
+newtype SourceFieldId = SourceFieldId (Either (Expandable CardId) (Expandable SourceId))
+  deriving (Read, Show, Eq, Ord, Data, Typeable)
+
+------------------------------------------------------------------------------
+-- | JSON Instance for `SourceFieldId`
+instance FromJSON SourceFieldId where
+    parseJSON v = 
+      SourceFieldId <$> 
+        ((Left <$> parseJSON v) <|> (Right <$> parseJSON v))
 
 ------------------------------------------------------------------------------
 -- | specify a `TimeRange`
@@ -131,7 +161,7 @@ data Charge = Charge {
     , chargeAmount               :: Amount
     , chargeCurrency             :: Currency
     , chargeRefunded             :: Bool
-    , chargeSource               :: Maybe Card
+    , chargeSource               :: Maybe SourceField
     , chargeCaptured             :: Bool
     , chargeRefunds              :: StripeList Refund
     , chargeBalanceTransaction   :: Maybe (Expandable TransactionId)
@@ -268,6 +298,7 @@ newtype CustomerId = CustomerId Text
 instance FromJSON CustomerId where
     parseJSON = withText "customer id" (pure . CustomerId)
 
+
 ------------------------------------------------------------------------------
 -- | `Customer` object
 data Customer = Customer {
@@ -281,9 +312,9 @@ data Customer = Customer {
     , customerSubscriptions  :: StripeList Subscription
     , customerDiscount       :: Maybe Discount
     , customerAccountBalance :: Int
-    , customerSources        :: StripeList Source 
+    , customerSources        :: StripeList SourceField
     , customerCurrency       :: Maybe Currency
-    , customerDefaultSource  :: Maybe (Expandable SourceId)
+    , customerDefaultSource  :: Maybe SourceFieldId 
     , customerMetaData       :: MetaData
     }  deriving (Read, Show, Eq, Ord, Data, Typeable)
 
@@ -321,7 +352,11 @@ newtype CardId = CardId Text
 ------------------------------------------------------------------------------
 -- | JSON Instance for `CardId`
 instance FromJSON CardId where
-    parseJSON = fmap CardId . parseJSON
+    parseJSON = withText "CardId" $ \t -> do
+      let (prefix, rest) = breakOn "_" t 
+      if prefix == "card" 
+        then pure $ CardId t 
+        else fail "Not a CardId"
 
 ------------------------------------------------------------------------------
 -- | Number associated with a `Card`
@@ -1722,7 +1757,11 @@ newtype SourceId = SourceId Text
 
 -- | JSON instance for `SourceId`
 instance FromJSON SourceId where
-    parseJSON = withText "source id" (pure . SourceId)
+    parseJSON = withText "SourceId" $ \t -> do
+      let (prefix, rest) = breakOn "_" t 
+      if prefix == "src" 
+        then pure $ SourceId t 
+        else fail "Not a SourceId"
 
 ------------------------------------------------------------------------------
 -- |  Address for a `SourceOwner`
